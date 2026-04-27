@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#F2EDE2">
+<title>한길 · HanGil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F2EDE2;
+    --cream-deep: #E8E0CE;
+    --ink: #14110D;
+    --ink-soft: #4A4438;
+    --muted: #8A8170;
+    --line: #D9D0BC;
+    --line-soft: #EDE5D2;
+    --primary: #14315E;
+    --primary-soft: #1E467F;
+    --saffron: #D6691E;
+    --saffron-light: #E8843D;
+    --green: #2E6B3E;
+    --red: #B5342A;
+    --paper: #FFFFFF;
+  }
+
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    font-family: 'Manrope', 'IBM Plex Sans KR', 'Noto Sans Sinhala', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .display { font-family: 'Bricolage Grotesque', serif; font-weight: 700; letter-spacing: -0.03em; }
+  .ko { font-family: 'IBM Plex Sans KR', sans-serif; }
+  .si { font-family: 'Noto Sans Sinhala', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ========== APP CONTAINER ========== */
+  #app {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--cream);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (min-width: 481px) {
+    body { background: linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%); padding: 20px; }
+    #app {
+      height: calc(100vh - 40px);
+      max-height: 900px;
+      border-radius: 32px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+  }
+
+  /* ========== SCREEN SYSTEM ========== */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--cream);
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+  }
+  .screen.active { transform: translateX(0); z-index: 2; }
+  .screen.prev { transform: translateX(-30%); z-index: 1; }
+
+  /* SAFE AREA */
+  .top-safe { padding-top: max(env(safe-area-inset-top), 20px); }
+  .bot-safe { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+
+  /* ========== SHARED HEADER ========== */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px 6px;
+    flex-shrink: 0;
+  }
+  .nav-back {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .nav-back:active { transform: scale(0.94); }
+  .nav-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+    color: var(--ink-soft); font-weight: 600;
+    text-transform: uppercase;
+  }
+  .nav-spacer { width: 40px; }
+
+  /* ========== BUTTONS ========== */
+  .btn-primary {
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    padding: 16px 24px;
+    border-radius: 14px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.1s;
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled {
+    background: var(--line);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    background: var(--paper);
+    color: var(--ink);
+    border: 1.5px solid var(--line);
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn-secondary:active { transform: scale(0.98); }
+
+  /* ============================================
+     SCREEN 1: SPLASH
+  ============================================ */
+  #splash {
+    background: var(--cream);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  #splash::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 56px 56px;
+    opacity: 0.3;
+    mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .splash-mark {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 32px;
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .splash-mark .road {
+    width: 80px; height: 80px;
+    background: var(--ink);
+    border-radius: 24px;
+    position: relative;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+  .splash-mark .road::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    width: 6px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--saffron) 0,
+      var(--saffron) 12px,
+      transparent 12px,
+      transparent 22px
+    );
+  }
+  #splash h1 {
+    position: relative; z-index: 1;
+    font-family: 'Bricolage Grotesque', serif;
+    font-size: 80px;
+    line-height: 0.9;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin-bottom: 8px;
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+  }
+  #splash h1 .ac { color: var(--saffron); font-style: italic; }
+  #splash .tagline {
+    position: relative; z-index: 1;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 64px;
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
+  }
+  #splash .splash-cta {
+    position: relative; z-index: 1;
+    width: 100%;
+    max-width: 340px;
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
+  }
+  #splash .splash-skip {
+    position: relative; z-index: 1;
+    margin-top: 16px;
+    color: var(--ink-soft);
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s backwards;
+  }
+  #splash .demo-badge {
+    position: absolute;
+    top: max(env(safe-area-inset-top), 20px);
+    right: 20px;
+    background: var(--saffron);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    z-index: 10;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================================
+     SCREEN 2: LANGUAGE SELECT
+  ============================================ */
+  #lang-screen { padding: 0; }
+  #lang-screen .lang-head {
+    padding: 32px 24px 16px;
+    flex-shrink: 0;
+  }
+  #lang-screen h2 {
+    font-family: 'Bricolage Grotesque', serif;
+    font-size: 32px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  #lang-screen h2 em { color: var(--saffron); font-style: italic; }
+  #lang-screen .lang-sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .lang-search {
+    margin: 8px 20px 12px;
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 100px;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .lang-search-icon {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--muted);
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .lang-search-icon::after {
+    content: '';
+    position: absolute; bottom: -5px; right: -3px;
+    width: 7px; height: 1.5px; background: var(--muted);
+    transform: rotate(45deg);
+    border-radius: 1px;
+  }
+  .lang-search input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .lang-search input::placeholder {
+    color: var(--muted);
+  }
+  .lang-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .lang-section-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-soft);
+    font-weight: 700;
+    padding: 12px 4px 8px;
+  }
+  .lang-section-head .count {
+    background: var(--ink); color: var(--cream);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 100px;
+    letter-spacing: 0;
+  }
+  .lang-section-head .count.alt {
+    background: transparent;
+    color: var(--saffron);
+    border: 1px solid var(--saffron);
+  }
+  .lang-item {
+    background: var(--paper);
+    border: 1.5px solid var(--line-soft);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  }
+  .lang-item:active { transform: scale(0.98); }
+  .lang-item.selected {
+    border-color: var(--primary);
+    background: #F5F8FF;
+    border-width: 2px;
+  }
+  .lang-item .native {
+    font-size: 16px; font-weight: 600; color: var(--ink);
+    line-height: 1.2;
+  }
+  .lang-item .latin {
+    font-size: 11px; color: var(--muted);
+    margin-top: 3px;
+  }
+  .lang-item .check {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+  .lang-item:not(.selected) .check {
+    background: transparent;
+    border: 1.5px solid var(--line);
+  }
+  .lang-item:not(.selected) .check::after { content: ''; }
+
+  .lang-cta {
+    padding: 12px 20px 20px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================
+     SCREEN 3: HOME
+  ============================================ */
+  #home-screen { background: var(--cream); padding: 0; }
+  .home-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .home-greet {
+    padding: 20px 24px 12px;
+    display: flex; justify-content: space-between; align-items: start;
+  }
+  .home-greet .h-eyebrow {
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .home-greet .h-title {
+    font-family: 'Bricolage Grotesque', serif;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+  }
+  .home-greet .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--saffron);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .progress-card {
+    margin: 0 16px 16px;
+    padding: 22px 20px;
+    background: var(--primary);
+    color: white;
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-card::after {
+    content: '';
+    position: absolute;
+    top: -50px; right: -50px;
+    width: 140px; height: 140px;
+    background: var(--primary-soft);
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+  .progress-card .pc-label {
+    font-size: 10px;
+    opacity: 0.7;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    position: relative;
+    font-weight: 600;
+  }
+  .progress-card .pc-day {
+    font-family: 'Bricolage Grotesque', serif;
+    font-size: 36px;
+    font-weight: 700;
+    margin: 6px 0 14px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    position: relative;
+  }
+  .progress-card .pc-day .total {
+    opacity: 0.5;
+    font-size: 22px;
+  }
+  .pc-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 100px;
+    overflow: hidden;
+    position: relative;
+  }
+  .pc-bar div {
+    height: 100%;
+    width: 0%;
+    background: var(--saffron-light);
+    border-radius: 100px;
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pc-stats {
+    display: flex;
+    gap: 22px;
+    margin-top: 14px;
+    position: relative;
+    font-size: 11px;
+  }
+  .pc-stats div { opacity: 0.85; }
+  .pc-stats strong {
+    display: block;
+    font-size: 17px;
+    opacity: 1;
+    font-weight: 700;
+    margin-bottom: 1px;
+  }
+
+  .quick-grid {
+    padding: 0 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .qcard {
+    background: var(--paper);
+    border: 1px solid var(--line-soft);
+    border-radius: 16px;
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-height: 120px;
+  }
+  .qcard:active { transform: scale(0.97); }
+  .qcard .qc-ic {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .qcard.c1 .qc-ic { background: var(--primary); }
+  .qcard.c2 .qc-ic { background: var(--saffron); }
+  .qcard.c3 .qc-ic { background: var(--red); }
+  .qcard.c4 .qc-ic { background: var(--green); }
+  .qcard h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 14px;
+  }
+  .qcard .qc-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* ============================================
+     SCREEN 4: QUESTION (Practice)
+  ============================================ */
+  #question-screen { background: var(--cream); }
+  .q-progress-wrap {
+    padding: 8px 20px;
+    flex-shrink: 0;
+  }
+  .q-progress {
+    height: 4px;
+    background: var(--line);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .q-progress div {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 100px;
+    transition: width 0.3s ease;
+  }
+  .q-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .q-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    background: #DCE5F2;
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .q-text-ko {
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .q-text-trans {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .q-image {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100px;
+  }
+  /* Speed limit sign */
+  .sign-speed {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: white;
+    border: 7px solid var(--red);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bricolage Grotesque', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  /* Stop sign */
+  .sign-stop {
+    width: 70px; height: 70px;
+    background: var(--red);
+    clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  /* No entry */
+  .sign-noentry {
+    width: 64px; height: 64px;
+    background: var(--red);
+    border-radius: 50%;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sign-noentry::after {
+    content: '';
+    width: 36px; height: 8px;
+    background: white;
+    border-radius: 4px;
+  }
+  /* Yield */
+  .sign-yield {
+    width: 0; height: 0;
+    border-left: 36px solid transparent;
+    border-right: 36px solid transparent;
+    border-top: 64px solid var(--red);
+    position: relative;
+  }
+  .sign-yield::after {
+    content: '';
+    position: absolute;
+    top: -56px; left: -26px;
+    border-left: 26px solid transparent;
+    border-right: 26px solid transparent;
+    border-top: 44px solid white;
+  }
+
+  .q-options {
+    display: flex; flex-direction: column;
+    gap: 8px;
+  }
+  .q-opt {
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  }
+  .q-opt:active { transform: scale(0.98); }
+  .q-opt.selected {
+    border-color: var(--primary);
+    background: #F5F8FF;
+    border-width: 2px;
+  }
+  .q-opt.correct {
+    border-color: var(--green);
+    background: #E6F2EA;
+    border-width: 2px;
+  }
+  .q-opt.wrong {
+    border-color: var(--red);
+    background: #F8DEDB;
+    border-width: 2px;
+  }
+  .q-opt .opt-key {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--cream-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  .q-opt.selected .opt-key {
+    background: var(--primary);
+    color: white;
+  }
+  .q-opt.correct .opt-key {
+    background: var(--green);
+    color: white;
+  }
+  .q-opt.wrong .opt-key {
+    background: var(--red);
+    color: white;
+  }
+  .q-opt-text {
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  .q-opt-trans {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .q-cta-area {
+    padding: 12px 20px 20px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================
+     FEEDBACK CARD (slides up after answer)
+  ============================================ */
+  .feedback-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 17, 13, 0.4);
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .feedback-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .feedback-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    background: var(--paper);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 24px max(env(safe-area-inset-bottom), 24px);
+    z-index: 11;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .feedback-sheet.active {
+    transform: translateY(0);
+  }
+  .feedback-result {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .feedback-result .fb-icon {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    color: white;
+    flex-shrink: 0;
+  }
+  .feedback-result .fb-icon.correct { background: var(--green); }
+  .feedback-result .fb-icon.wrong { background: var(--red); }
+  .feedback-result h3 {
+    font-family: 'Bricolage Grotesque', serif;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .feedback-result .fb-trans {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .feedback-explain {
+    background: var(--cream);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .feedback-explain .fe-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--saffron);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .feedback-explain .fe-ko {
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+  .feedback-explain .fe-trans {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .feedback-actions {
+    display: flex; gap: 8px;
+    margin-top: 8px;
+  }
+  .feedback-actions .btn-secondary {
+    flex: 1;
+    padding: 14px;
+    text-align: center;
+  }
+  .feedback-actions .btn-primary {
+    flex: 1;
+    padding: 14px;
+  }
+
+  /* ============================================
+     SCREEN: RESULT
+  ============================================ */
+  #result-screen { background: var(--cream); }
+  .result-top {
+    background: var(--green);
+    color: white;
+    padding: 60px 24px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .result-top.fail { background: var(--red); }
+  .result-top::before {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: -50px;
+    width: 200px; height: 200px;
+    border: 40px solid rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+  .result-top .r-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-bottom: 6px;
+    position: relative;
+    font-weight: 600;
+  }
+  .result-top .r-score {
+    font-family: 'Bricolage Grotesque', serif;
+    font-size: 96px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    position: relative;
+  }
+  .result-top .r-score .r-total {
+    font-size: 0.4em;
+    opacity: 0.6;
+  }
+  .result-top .r-pass {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    position: relative;
+  }
+  .result-stats {
+    display: flex;
+    padding: 24px;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .result-stat { flex: 1; }
+  .result-stat .num {
+    font-family: 'Bricolage Grotesque', serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .result-stat .lbl {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  .result-cta {
+    padding: 16px 24px max(env(safe-area-inset-bottom), 16px);
+    flex-shrink: 0;
+    margin-top: auto;
+  }
+
+  /* ============================================
+     ANIMATIONS
+  ============================================ */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+  .shake { animation: shake 0.3s ease-in-out; }
+
+  @keyframes pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .pop { animation: pop 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* ============================================
+     LANG-SPECIFIC FONT
+  ============================================ */
+  .lang-si, .lang-si * { font-family: 'Noto Sans Sinhala', 'IBM Plex Sans KR', sans-serif; }
+
+  /* Scroll bars */
+  *::-webkit-scrollbar { width: 0; display: none; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ SPLASH ============ -->
+  <div class="screen active" id="splash">
+    <div class="demo-badge">DEMO</div>
+    <div class="splash-mark">
+      <div class="road"></div>
+    </div>
+    <h1>Han<span class="ac">Gil</span></h1>
+    <div class="tagline">한길 · One Road. One Pass.</div>
+    <button class="btn-primary splash-cta" onclick="goToLang()">Start · 시작하기 →</button>
+    <div class="splash-skip" onclick="skipToHome()">Skip to demo</div>
+  </div>
+
+  <!-- ============ LANGUAGE SELECT ============ -->
+  <div class="screen" id="lang-screen">
+    <div class="nav top-safe">
+      <div class="nav-back" onclick="goToSplash()">←</div>
+      <div class="nav-title">01 / 04 · Setup</div>
+      <div class="nav-spacer"></div>
+    </div>
+    <div class="lang-head">
+      <h2>Choose your<br><em>language.</em></h2>
+      <div class="lang-sub">언어를 선택하세요 · 22개 언어 지원</div>
+    </div>
+    <div class="lang-search">
+      <span class="lang-search-icon"></span>
+      <input type="text" id="lang-input" placeholder="Search · खोजें · ابحث · cari..." oninput="filterLangs(this.value)">
+    </div>
+    <div class="lang-list" id="lang-list">
+      <!-- Populated by JS -->
+    </div>
+    <div class="lang-cta bot-safe">
+      <button class="btn-primary" id="lang-continue" onclick="confirmLang()" disabled>Continue · ඉදිරියට →</button>
+    </div>
+  </div>
+
+  <!-- ============ HOME ============ -->
+  <div class="screen" id="home-screen">
+    <div class="home-content">
+      <div class="home-greet top-safe">
+        <div>
+          <div class="h-eyebrow" id="home-greeting">ආයුබෝවන් · Welcome</div>
+          <div class="h-title">Day 1 of 30</div>
+        </div>
+        <div class="avatar">S</div>
+      </div>
+      <div class="progress-card">
+        <div class="pc-label">Practice mode · 연습</div>
+        <div class="pc-day">0<span class="total">/20</span></div>
+        <div class="pc-bar"><div id="home-bar"></div></div>
+        <div class="pc-stats">
+          <div><strong id="home-solved">0</strong>Solved</div>
+          <div><strong id="home-acc">—</strong>Accuracy</div>
+          <div><strong>1</strong>Streak</div>
+        </div>
+      </div>
+      <div class="quick-grid">
+        <div class="qcard c1" onclick="startPractice()">
+          <div class="qc-ic">◐</div>
+          <div>
+            <h4>주제별 연습</h4>
+            <div class="qc-sub">Topic practice · 20 Q</div>
+          </div>
+        </div>
+        <div class="qcard c2" onclick="startMockExam()">
+          <div class="qc-ic">◑</div>
+          <div>
+            <h4>실전 모의고사</h4>
+            <div class="qc-sub">Mock exam · Coming soon</div>
+          </div>
+        </div>
+        <div class="qcard c3" onclick="alertPreview('오답노트는 v0.2에서 추가됩니다 · Mistake notes coming in v0.2')">
+          <div class="qc-ic">◒</div>
+          <div>
+            <h4>오답노트</h4>
+            <div class="qc-sub">Mistakes · Soon</div>
+          </div>
+        </div>
+        <div class="qcard c4" onclick="alertPreview('표지판 사전은 v0.2에서 추가됩니다 · Sign dictionary coming in v0.2')">
+          <div class="qc-ic">◓</div>
+          <div>
+            <h4>표지판 사전</h4>
+            <div class="qc-sub">Signs · Soon</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 20px 24px; text-align: center;">
+        <div style="font-size: 11px; color: var(--muted); letter-spacing: 0.05em;">Demo build · 20 sample questions</div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Real version: 1,000+ questions, 22 languages</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ QUESTION ============ -->
+  <div class="screen" id="question-screen">
+    <div class="nav top-safe">
+      <div class="nav-back" onclick="exitQuestion()">←</div>
+      <div class="nav-title" id="q-counter">1 / 20</div>
+      <div class="nav-spacer"></div>
+    </div>
+    <div class="q-progress-wrap">
+      <div class="q-progress"><div id="q-bar"></div></div>
+    </div>
+    <div class="q-content" id="q-content">
+      <!-- populated by JS -->
+    </div>
+    <div class="q-cta-area bot-safe">
+      <button class="btn-primary" id="q-submit" onclick="submitAnswer()" disabled>Submit · තහවුරු කරන්න</button>
+    </div>
+
+    <div class="feedback-overlay" id="fb-overlay" onclick="closeFeedback()"></div>
+    <div class="feedback-sheet" id="fb-sheet">
+      <div class="feedback-result">
+        <div class="fb-icon" id="fb-icon">✓</div>
+        <div>
+          <h3 id="fb-title">Correct.</h3>
+          <div class="fb-trans" id="fb-subtitle">හරි! 정답입니다.</div>
+        </div>
+      </div>
+      <div class="feedback-explain">
+        <div class="fe-label">설명 · Explanation</div>
+        <div class="fe-ko" id="fb-explain-ko"></div>
+        <div class="fe-trans" id="fb-explain-trans"></div>
+      </div>
+      <div class="feedback-actions">
+        <button class="btn-secondary" onclick="markBookmark()">★ Save</button>
+        <button class="btn-primary" onclick="nextQuestion()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RESULT ============ -->
+  <div class="screen" id="result-screen">
+    <div class="result-top top-safe" id="result-top">
+      <div class="r-label">Practice Result · 연습 결과</div>
+      <div class="r-score"><span id="r-score">0</span><span class="r-total">/20</span></div>
+      <div class="r-pass" id="r-pass">✓ Great job!</div>
+    </div>
+    <div class="result-stats">
+      <div class="result-stat">
+        <div class="num" id="r-correct">0</div>
+        <div class="lbl">Correct · 정답</div>
+      </div>
+      <div class="result-stat">
+        <div class="num" id="r-wrong">0</div>
+        <div class="lbl">Wrong · 오답</div>
+      </div>
+      <div class="result-stat">
+        <div class="num" id="r-pct">0%</div>
+        <div class="lbl">Score · 점수</div>
+      </div>
+    </div>
+    <div style="padding: 24px; flex: 1;">
+      <h3 style="font-family: 'Bricolage Grotesque', serif; font-size: 22px; font-weight: 700; margin-bottom: 16px;">
+        다음에 무엇을 할까요?<br>
+        <span style="font-family: Manrope; font-size: 13px; color: var(--ink-soft); font-weight: 400;">What's next?</span>
+      </h3>
+      <div style="font-size: 14px; color: var(--ink-soft); line-height: 1.6;" id="r-feedback">
+        잘 하셨어요! 더 많은 문제를 풀고 모의고사에 도전하세요.<br>
+        <span style="font-size: 12px; color: var(--muted); font-style: italic;">Great progress! Try more questions and the mock exam.</span>
+      </div>
+    </div>
+    <div class="result-cta">
+      <button class="btn-primary" onclick="goHome()">Back to Home · 홈으로 →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===========================================
+// LANGUAGE DATA (22 languages, 2 tiers)
+// ===========================================
+const LANGUAGES = [
+  // Tier 1: KoROAD official (11)
+  { code: 'ko', native: '한국어', latin: 'Korean · 한국어', tier: 'exam' },
+  { code: 'en', native: 'English', latin: 'English · 영어', tier: 'exam' },
+  { code: 'zh', native: '中文', latin: 'Chinese · 중국어', tier: 'exam' },
+  { code: 'vi', native: 'Tiếng Việt', latin: 'Vietnamese · 베트남어', tier: 'exam' },
+  { code: 'ja', native: '日本語', latin: 'Japanese · 일본어', tier: 'exam' },
+  { code: 'th', native: 'ภาษาไทย', latin: 'Thai · 태국어', tier: 'exam' },
+  { code: 'id', native: 'Bahasa Indonesia', latin: 'Indonesian · 인도네시아어', tier: 'exam' },
+  { code: 'mn', native: 'Монгол', latin: 'Mongolian · 몽골어', tier: 'exam' },
+  { code: 'ru', native: 'Русский', latin: 'Russian · 러시아어', tier: 'exam' },
+  { code: 'km', native: 'ខ្មែរ', latin: 'Khmer · 캄보디아어', tier: 'exam' },
+  { code: 'tl', native: 'Tagalog', latin: 'Filipino · 필리핀어', tier: 'exam' },
+  // Tier 2: Study only (11)
+  { code: 'si', native: 'සිංහල', latin: 'Sinhala · 신할라어', tier: 'study' },
+  { code: 'ta', native: 'தமிழ்', latin: 'Tamil · 타밀어', tier: 'study' },
+  { code: 'ne', native: 'नेपाली', latin: 'Nepali · 네팔어', tier: 'study' },
+  { code: 'bn', native: 'বাংলা', latin: 'Bengali · 벵골어', tier: 'study' },
+  { code: 'my', native: 'မြန်မာ', latin: 'Burmese · 미얀마어', tier: 'study' },
+  { code: 'uz', native: 'O\'zbek', latin: 'Uzbek · 우즈벡어', tier: 'study' },
+  { code: 'ur', native: 'اردو', latin: 'Urdu · 우르두어', tier: 'study' },
+  { code: 'hi', native: 'हिन्दी', latin: 'Hindi · 힌디어', tier: 'study' },
+  { code: 'ar', native: 'العربية', latin: 'Arabic · 아랍어', tier: 'study' },
+  { code: 'tr', native: 'Türkçe', latin: 'Turkish · 터키어', tier: 'study' },
+  { code: 'es', native: 'Español', latin: 'Spanish · 스페인어', tier: 'study' },
+];
+
+// Greeting in each language
+const GREETINGS = {
+  ko: '안녕하세요',
+  en: 'Welcome',
+  zh: '欢迎',
+  vi: 'Xin chào',
+  ja: 'ようこそ',
+  th: 'ยินดีต้อนรับ',
+  id: 'Selamat datang',
+  mn: 'Тавтай морил',
+  ru: 'Добро пожаловать',
+  km: 'សូមស្វាគមន៍',
+  tl: 'Maligayang pagdating',
+  si: 'ආයුබෝවන්',
+  ta: 'வரவேற்கிறோம்',
+  ne: 'स्वागतम्',
+  bn: 'স্বাগতম',
+  my: 'ကြိုဆိုပါသည်',
+  uz: 'Xush kelibsiz',
+  ur: 'خوش آمدید',
+  hi: 'स्वागत है',
+  ar: 'أهلاً وسهلاً',
+  tr: 'Hoş geldiniz',
+  es: 'Bienvenido',
+};
+
+// "Continue" in each language
+const CONTINUE_TEXT = {
+  ko: '계속',
+  en: 'Continue',
+  zh: '继续',
+  vi: 'Tiếp tục',
+  ja: '続ける',
+  th: 'ดำเนินการต่อ',
+  id: 'Lanjutkan',
+  mn: 'Үргэлжлүүлэх',
+  ru: 'Продолжить',
+  km: 'បន្ត',
+  tl: 'Magpatuloy',
+  si: 'ඉදිරියට',
+  ta: 'தொடரவும்',
+  ne: 'जारी राख्नुहोस्',
+  bn: 'চালিয়ে যান',
+  my: 'ဆက်လက်',
+  uz: 'Davom etish',
+  ur: 'جاری رکھیں',
+  hi: 'जारी रखें',
+  ar: 'متابعة',
+  tr: 'Devam',
+  es: 'Continuar',
+};
+
+// ===========================================
+// SAMPLE QUESTIONS (20 questions, KR + EN + SI)
+// ===========================================
+const QUESTIONS = [
+  {
+    id: 1, category: '신호와 표지', cat_en: 'Signs',
+    sign: 'speed-50',
+    q: { ko: '다음 표지판이 있는 도로에서 차량의 최고 속도는?', en: 'What is the maximum speed on a road with this sign?', si: 'මෙම සංඥාව ඇති පාරක උපරිම වේගය කවරේද?' },
+    options: [
+      { ko: '시속 30km 이하', en: '30 km/h or less', si: 'පැයට කි.මී. 30 හෝ අඩු' },
+      { ko: '시속 50km 이하', en: '50 km/h or less', si: 'පැයට කි.මී. 50 හෝ අඩු' },
+      { ko: '시속 60km 이하', en: '60 km/h or less', si: 'පැයට කි.මී. 60 හෝ අඩු' },
+      { ko: '제한 없음', en: 'No limit', si: 'සීමාවක් නැත' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '제한속도 표지판(50)은 표지판이 있는 지점부터 다음 속도 표지판이 나올 때까지 시속 50km를 초과해서 운전할 수 없음을 의미합니다.',
+      en: 'A 50 km/h speed limit sign means you cannot drive over 50 km/h from this point until the next speed sign.',
+      si: 'වේග සීමා සංඥාවේ (50) අරුත නම්, එම සංඥාව ඇති ස්ථානයේ සිට ඊළඟ වේග සංඥාව දක්වා පැයට කි.මී. 50ට වඩා වේගයෙන් රිය පැදවිය නොහැකි බවයි.'
+    }
+  },
+  {
+    id: 2, category: '신호와 표지', cat_en: 'Signs',
+    sign: 'stop',
+    q: { ko: '이 표지판이 있는 곳에서 운전자가 해야 할 행동은?', en: 'What should a driver do at this sign?', si: 'මෙම සංඥාව ඇති ස්ථානයේ රියදුරු කළ යුත්තේ කුමක්ද?' },
+    options: [
+      { ko: '서행하며 통과한다', en: 'Slow down and pass', si: 'වේගය අඩු කර පසුකරයි' },
+      { ko: '경적을 울리고 통과한다', en: 'Honk and pass', si: 'බෙල් නාද කර පසුකරයි' },
+      { ko: '일시정지 후 안전을 확인하고 출발한다', en: 'Stop completely, check, then go', si: 'සම්පූර්ණයෙන් නවතා, පරීක්ෂා කර, ඉදිරියට යයි' },
+      { ko: '신호와 관계없이 빠르게 통과한다', en: 'Pass quickly regardless', si: 'සංඥාව නොසලකා වේගයෙන් පසුකරයි' },
+    ],
+    correct: 2,
+    explain: {
+      ko: '"정지(STOP)" 표지가 있는 곳에서는 반드시 일시정지하여 좌우 안전을 확인한 후 출발해야 합니다.',
+      en: 'At a STOP sign, you must come to a complete stop, check for safety in all directions, then proceed.',
+      si: '"STOP" සංඥාව ඇති ස්ථානයක දී, සම්පූර්ණයෙන් නැවතී, දෙපැත්තේ ආරක්ෂාව පරීක්ෂා කර පසුව පමණක් ඉදිරියට යා යුතුය.'
+    }
+  },
+  {
+    id: 3, category: '신호와 표지', cat_en: 'Signs',
+    sign: 'noentry',
+    q: { ko: '이 표지판은 무엇을 의미합니까?', en: 'What does this sign mean?', si: 'මෙම සංඥාවේ අරුත කුමක්ද?' },
+    options: [
+      { ko: '주차 금지', en: 'No parking', si: 'වාහන නැවැත්වීම තහනම්' },
+      { ko: '진입 금지', en: 'No entry', si: 'ඇතුළු වීම තහනම්' },
+      { ko: '추월 금지', en: 'No overtaking', si: 'ඉස්සර කිරීම තහනම්' },
+      { ko: '유턴 금지', en: 'No U-turn', si: 'U-හැරවීම තහනම්' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '진입금지 표지는 차량이 그 방향으로 들어갈 수 없음을 의미합니다.',
+      en: 'A No Entry sign means vehicles cannot enter in that direction.',
+      si: 'ඇතුළු වීම තහනම් සංඥාවේ අරුත නම්, එම දිශාවට වාහන ඇතුළු විය නොහැකි බවයි.'
+    }
+  },
+  {
+    id: 4, category: '도로교통법규', cat_en: 'Traffic Law',
+    q: { ko: '교차로에서 좌회전하려고 할 때 가장 안전한 운전 방법은?', en: 'What is the safest way to turn left at an intersection?', si: 'හන්දියකදී වමට හැරීමට ආරක්ෂිතම ක්‍රමය කුමක්ද?' },
+    options: [
+      { ko: '경적을 울리며 빠르게 통과한다', en: 'Honk and pass quickly', si: 'බෙල් නාදකර වේගයෙන් පසුකරයි' },
+      { ko: '속도를 줄이고 좌측 후방을 확인한다', en: 'Slow down and check left rear', si: 'වේගය අඩුකර වම් පසුපස පරීක්ෂා කරයි' },
+      { ko: '가속하며 진입한다', en: 'Accelerate while entering', si: 'වේගය වැඩිකරමින් ඇතුළුවෙයි' },
+      { ko: '정지선을 넘어 대기한다', en: 'Wait past the stop line', si: 'නැවතුම් රේඛාව පසුකර රැඳී සිටියි' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '좌회전 시에는 속도를 줄이고 후방 차량과 보행자를 확인한 후 안전하게 회전해야 합니다.',
+      en: 'When turning left, reduce speed and check for vehicles and pedestrians behind before turning safely.',
+      si: 'වමට හැරෙන විට, වේගය අඩුකර, පසුපස වාහන සහ පදිකයන් පරීක්ෂා කර, පසුව ආරක්ෂිතව හැරවිය යුතුය.'
+    }
+  },
+  {
+    id: 5, category: '도로교통법규', cat_en: 'Traffic Law',
+    q: { ko: '고속도로에서 시속 100km로 주행 시 안전거리는?', en: 'Safe distance at 100 km/h on a highway?', si: 'අධිවේගී මාර්ගයක පැයට කි.මී. 100 ක වේගයේදී ආරක්ෂිත දුර කවරේද?' },
+    options: [
+      { ko: '50m', en: '50m', si: 'මීටර් 50' },
+      { ko: '70m', en: '70m', si: 'මීටර් 70' },
+      { ko: '100m', en: '100m', si: 'මීටර් 100' },
+      { ko: '200m', en: '200m', si: 'මීටර් 200' },
+    ],
+    correct: 2,
+    explain: {
+      ko: '고속도로에서 안전거리는 일반적으로 시속과 동일한 m 단위입니다. 시속 100km에서는 약 100m가 안전거리입니다.',
+      en: 'On a highway, safe distance in meters typically equals your speed. At 100 km/h, keep ~100m distance.',
+      si: 'අධිවේගී මාර්ගයක ආරක්ෂිත දුර සාමාන්‍යයෙන් වේගයට සමාන මීටර් වේ. පැයට කි.මී. 100 දී මීටර් 100 ක් පැවැත්විය යුතුය.'
+    }
+  },
+  {
+    id: 6, category: '도로교통법규', cat_en: 'Traffic Law',
+    q: { ko: '음주운전 단속 기준이 되는 혈중알코올농도는?', en: 'Blood alcohol limit for DUI in Korea?', si: 'කොරියාවේ මත්පැන් පානය කර රිය පැදවීමේ රුධිර ඇල්කොහොල් සීමාව?' },
+    options: [
+      { ko: '0.01% 이상', en: '0.01% or more', si: '0.01% හෝ වැඩි' },
+      { ko: '0.03% 이상', en: '0.03% or more', si: '0.03% හෝ වැඩි' },
+      { ko: '0.05% 이상', en: '0.05% or more', si: '0.05% හෝ වැඩි' },
+      { ko: '0.08% 이상', en: '0.08% or more', si: '0.08% හෝ වැඩි' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '한국의 음주운전 단속 기준은 혈중알코올농도 0.03% 이상입니다 (2019년 6월부터). 0.03~0.08%는 면허정지, 0.08% 이상은 면허취소입니다.',
+      en: 'In Korea, the DUI threshold is 0.03% blood alcohol (since June 2019). 0.03-0.08% is license suspension; 0.08%+ is revocation.',
+      si: 'කොරියාවේ මත්පැන් පානය කර රිය පැදවීමේ සීමාව රුධිර ඇල්කොහොල් 0.03% (2019 ජූනි සිට). 0.03-0.08% බලපත්‍රය අත්හිටුවීමයි; 0.08% ට වැඩි නම් අවලංගු කිරීමයි.'
+    }
+  },
+  {
+    id: 7, category: '안전운전', cat_en: 'Safe Driving',
+    q: { ko: '비 오는 날 운전 시 가장 중요한 것은?', en: 'Most important thing when driving in rain?', si: 'වැසි දිනක රිය පැදවීමේදී වැදගත්ම දේ?' },
+    options: [
+      { ko: '평소보다 속도를 높인다', en: 'Drive faster than usual', si: 'සාමාන්‍යයට වඩා වේගයෙන් යයි' },
+      { ko: '평소보다 속도를 줄이고 안전거리를 늘린다', en: 'Reduce speed and increase distance', si: 'වේගය අඩුකර, දුර වැඩි කරයි' },
+      { ko: '경적을 자주 울린다', en: 'Honk frequently', si: 'නිරතුරුව බෙල් නාද කරයි' },
+      { ko: '비상등을 항상 켠다', en: 'Always use hazard lights', si: 'සැමවිටම බිය සංඥා දැල්වෙයි' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '비 오는 날에는 노면이 미끄러워 제동거리가 길어지므로, 평소보다 속도를 줄이고 안전거리를 충분히 확보해야 합니다.',
+      en: 'In rain, wet roads increase braking distance, so reduce speed and keep more distance from the car ahead.',
+      si: 'වැසි දිනක තෙත් මාර්ග නිසා බ්‍රේක් දුර වැඩි වේ, එබැවින් වේගය අඩුකර, ඉදිරි වාහනයෙන් වැඩි දුරක් පැවැත්විය යුතුය.'
+    }
+  },
+  {
+    id: 8, category: '안전운전', cat_en: 'Safe Driving',
+    q: { ko: '야간 운전 시 주의해야 할 사항으로 옳은 것은?', en: 'Which is correct for night driving?', si: 'රාත්‍රී කාලයේ රිය පැදවීමේදී නිවැරදි කරුණ?' },
+    options: [
+      { ko: '상향등을 항상 켜고 주행한다', en: 'Always use high beams', si: 'සැමවිටම ඉහළ-බීම් භාවිතා කරයි' },
+      { ko: '시야가 어두우므로 속도를 높여 빠르게 통과한다', en: 'Speed up due to dark visibility', si: 'අඳුර නිසා වේගය වැඩිකරයි' },
+      { ko: '대향차가 있을 때는 하향등으로 전환한다', en: 'Switch to low beams for oncoming cars', si: 'ඉදිරියට එන වාහනවලට පහළ-බීම් වෙත මාරු වෙයි' },
+      { ko: '음악을 크게 틀어 졸음을 쫓는다', en: 'Play loud music to stay awake', si: 'අවදියෙන් සිටීමට ශබ්දයෙන් සංගීතය අසයි' },
+    ],
+    correct: 2,
+    explain: {
+      ko: '야간 주행 중 대향차가 있을 때 상향등을 계속 켜면 상대 운전자가 눈부심을 일으켜 사고 위험이 높아집니다. 반드시 하향등으로 전환해야 합니다.',
+      en: 'High beams blind oncoming drivers and cause accidents. Always switch to low beams when other cars approach.',
+      si: 'ඉහළ-බීම් ඉදිරියට එන රියදුරන්ගේ ඇස් අඳුරු කර අනතුරු ඇතිකරයි. වෙනත් වාහන ළඟා වන විට පහළ-බීම් වෙත මාරු විය යුතුය.'
+    }
+  },
+  {
+    id: 9, category: '안전운전', cat_en: 'Safe Driving',
+    q: { ko: '졸음운전을 예방하는 방법으로 옳은 것은?', en: 'How to prevent drowsy driving?', si: 'නිදි රිය පැදවීම වළක්වන ක්‍රමය?' },
+    options: [
+      { ko: '커피만 마시면 충분하다', en: 'Coffee alone is enough', si: 'කෝපි පමණක් ප්‍රමාණවත්' },
+      { ko: '2시간마다 휴식을 취하고 충분한 수면을 취한다', en: 'Rest every 2 hours, get enough sleep', si: 'පැය 2කට වරක් විවේක ගෙන, ප්‍රමාණවත් නින්දක් ලබා ගනියි' },
+      { ko: '창문을 닫고 히터를 켠다', en: 'Close windows and turn on heater', si: 'ජනේල වසා හීටරය දල්වයි' },
+      { ko: '음악을 끄고 조용히 운전한다', en: 'Drive quietly without music', si: 'සංගීතයක් නැතිව නිහඬව රිය පදවයි' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '졸음운전 예방의 가장 효과적인 방법은 충분한 수면과 규칙적인 휴식입니다. 2시간마다 10-15분 휴식을 취하는 것이 권장됩니다.',
+      en: 'The best way to prevent drowsy driving is enough sleep and regular breaks. Take 10-15 min rest every 2 hours.',
+      si: 'නිදි රිය පැදවීම වැළැක්වීමට හොඳම ක්‍රමය නම් ප්‍රමාණවත් නින්දක් සහ නිතිපතා විවේකයන්ය. පැය 2කට වරක් මිනිත්තු 10-15ක විවේකයක් ගත යුතුය.'
+    }
+  },
+  {
+    id: 10, category: '신호와 표지', cat_en: 'Signs',
+    sign: 'yield',
+    q: { ko: '이 표지판은 무엇을 의미합니까?', en: 'What does this sign mean?', si: 'මෙම සංඥාවේ අරුත කුමක්ද?' },
+    options: [
+      { ko: '정지', en: 'Stop', si: 'නවතන්න' },
+      { ko: '양보', en: 'Yield', si: 'මග හරින්න' },
+      { ko: '진입금지', en: 'No entry', si: 'ඇතුළු වීම තහනම්' },
+      { ko: '주의', en: 'Caution', si: 'ප්‍රවේශම් වන්න' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '양보(Yield) 표지는 다른 차량이나 보행자에게 우선권을 양보해야 함을 의미합니다.',
+      en: 'A Yield sign means you must give the right-of-way to other vehicles or pedestrians.',
+      si: 'මග හරින (Yield) සංඥාවේ අරුත නම්, අන් වාහන හෝ පදිකයන්ට පෙර යාමට ඉඩ දිය යුතු බවයි.'
+    }
+  },
+  {
+    id: 11, category: '도로교통법규', cat_en: 'Traffic Law',
+    q: { ko: '어린이보호구역(스쿨존)에서의 제한속도는?', en: 'Speed limit in a school zone?', si: 'පාසල් කලාපයක වේග සීමාව?' },
+    options: [
+      { ko: '시속 20km 이하', en: '20 km/h or less', si: 'පැයට කි.මී. 20 හෝ අඩු' },
+      { ko: '시속 30km 이하', en: '30 km/h or less', si: 'පැයට කි.මී. 30 හෝ අඩු' },
+      { ko: '시속 40km 이하', en: '40 km/h or less', si: 'පැයට කි.මී. 40 හෝ අඩු' },
+      { ko: '시속 50km 이하', en: '50 km/h or less', si: 'පැයට කි.මී. 50 හෝ අඩු' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '어린이보호구역에서는 시속 30km 이하로 운행해야 합니다. 위반 시 일반 구역의 2배에 해당하는 벌점과 과태료가 부과됩니다.',
+      en: 'In a school zone, speed limit is 30 km/h. Violations incur 2x fines compared to regular zones.',
+      si: 'පාසල් කලාපයක වේග සීමාව පැයට කි.මී. 30 ය. උල්ලංඝනය කිරීම් සඳහා සාමාන්‍ය කලාපවලට වඩා දෙගුණයක දඩ ගැසේ.'
+    }
+  },
+  {
+    id: 12, category: '도로교통법규', cat_en: 'Traffic Law',
+    q: { ko: '안전벨트를 매지 않은 채 운전하면 어떻게 됩니까?', en: 'What happens if you drive without a seatbelt?', si: 'ආසන පටිය නොපැළඳ රිය පැදවුවොත් කුමක් වේද?' },
+    options: [
+      { ko: '아무런 처벌도 없다', en: 'No penalty', si: 'දඬුවමක් නැත' },
+      { ko: '경고만 받는다', en: 'Only a warning', si: 'අවවාදයක් පමණි' },
+      { ko: '운전자 본인 및 동승자 미착용 시 범칙금이 부과된다', en: 'Fines for driver and passengers', si: 'රියදුරු සහ මගීන්ට දඩ ගැසේ' },
+      { ko: '면허가 취소된다', en: 'License revoked', si: 'බලපත්‍රය අවලංගු වෙයි' },
+    ],
+    correct: 2,
+    explain: {
+      ko: '운전자뿐만 아니라 모든 동승자가 안전벨트를 매야 합니다. 미착용 시 범칙금이 부과됩니다.',
+      en: 'All occupants must wear seatbelts. Failure results in fines.',
+      si: 'රියදුරු පමණක් නොව, සියලු මගීන් ආසන පටි පැළඳිය යුතුය. නොකළහොත් දඬුවම් ලැබේ.'
+    }
+  },
+  {
+    id: 13, category: '안전운전', cat_en: 'Safe Driving',
+    q: { ko: '주행 중 휴대전화 사용에 대한 규정은?', en: 'Rules on phone use while driving?', si: 'රිය පදවන විට දුරකථන භාවිතය පිළිබඳ නීති?' },
+    options: [
+      { ko: '신호 대기 중에만 사용 가능', en: 'Only at red lights', si: 'රතු එළිවලදී පමණි' },
+      { ko: '핸즈프리 장치를 사용하면 가능', en: 'Hands-free device allowed', si: 'හැන්ඩ්ස්-ෆ්‍රී උපකරණ අවසර' },
+      { ko: '주행 중에는 절대 사용 불가', en: 'Never while driving', si: 'රිය පැදවීමේදී කිසි විටෙකත් භාවිතා නොකරන්න' },
+      { ko: '단문 메시지만 가능', en: 'Texting OK', si: 'කෙටි පණිවිඩ පමණි' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '주행 중 손에 들고 사용하는 것은 금지되며, 블루투스 등 핸즈프리 장치를 통한 통화는 허용됩니다.',
+      en: 'Hand-held phone use is banned. Hands-free (Bluetooth, etc.) calls are allowed.',
+      si: 'අතේ දරාගත් දුරකථන භාවිතය තහනම්ය. හැන්ඩ්ස්-ෆ්‍රී (බ්ලූටූත්) ඇමතුම්වලට අවසර ඇත.'
+    }
+  },
+  {
+    id: 14, category: '응급처치', cat_en: 'First Aid',
+    q: { ko: '교통사고 발생 시 가장 먼저 해야 할 일은?', en: 'First action after a traffic accident?', si: 'රථවාහන අනතුරක් සිදු වූ පසු පළමු ක්‍රියාව?' },
+    options: [
+      { ko: '경찰서로 직접 운전해서 간다', en: 'Drive to the police station', si: 'පොලීසියට කෙළින්ම යයි' },
+      { ko: '안전한 곳으로 차량을 이동시키고 부상자를 확인한다', en: 'Move car to safe area, check injuries', si: 'වාහනය ආරක්ෂිත ස්ථානයකට ගෙන, තුවාලකරුවන් පරීක්ෂා කරයි' },
+      { ko: '현장을 떠난다', en: 'Leave the scene', si: 'සිද්ධිය අතහැර යයි' },
+      { ko: '보험회사에만 연락한다', en: 'Call only insurance', si: 'රක්ෂණ සමාගමට පමණක් කතා කරයි' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '사고 발생 시 가장 먼저 차량을 안전한 곳으로 이동시키고, 부상자가 있는지 확인한 후 119에 신고해야 합니다.',
+      en: 'First, move the vehicle to a safe area, check for injuries, then call 119 (emergency).',
+      si: 'අනතුරකින් පසු, පළමුව වාහනය ආරක්ෂිත ස්ථානයකට ගෙන, තුවාලකරුවන් සිටී දැයි පරීක්ෂා කර, 119ට (හදිසි) ඇමතිය යුතුය.'
+    }
+  },
+  {
+    id: 15, category: '응급처치', cat_en: 'First Aid',
+    q: { ko: '심폐소생술(CPR)에서 가슴 압박의 권장 횟수는?', en: 'Recommended chest compressions in CPR?', si: 'CPR හි පපුව තද කිරීමේ නිර්දේශිත අනුපාතය?' },
+    options: [
+      { ko: '분당 60-80회', en: '60-80 per minute', si: 'මිනිත්තුවට 60-80' },
+      { ko: '분당 100-120회', en: '100-120 per minute', si: 'මිනිත්තුවට 100-120' },
+      { ko: '분당 30-50회', en: '30-50 per minute', si: 'මිනිත්තුවට 30-50' },
+      { ko: '분당 150회 이상', en: '150+ per minute', si: 'මිනිත්තුවට 150+' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '성인 심폐소생술 시 가슴 압박은 분당 100-120회의 속도로 약 5-6cm 깊이로 시행해야 합니다.',
+      en: 'For adult CPR, perform chest compressions at 100-120 per minute, about 5-6cm deep.',
+      si: 'වැඩිහිටියන්ගේ CPR සඳහා, මිනිත්තුවට 100-120 ක අනුපාතයකින්, සෙ.මී. 5-6 ක ගැඹුරකින් පපුව තද කළ යුතුය.'
+    }
+  },
+  {
+    id: 16, category: '자동차 정비', cat_en: 'Maintenance',
+    q: { ko: '엔진오일은 보통 몇 km마다 교환해야 합니까?', en: 'How often should engine oil be changed?', si: 'එන්ජින් තෙල් කොපමණ කි.මී. වරක් මාරු කළ යුතුද?' },
+    options: [
+      { ko: '500-1,000km', en: '500-1,000 km', si: 'කි.මී. 500-1,000' },
+      { ko: '5,000-10,000km', en: '5,000-10,000 km', si: 'කි.මී. 5,000-10,000' },
+      { ko: '50,000km', en: '50,000 km', si: 'කි.මී. 50,000' },
+      { ko: '교환할 필요 없다', en: 'Never', si: 'මාරු කිරීමට අවශ්‍ය නැත' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '일반적으로 엔진오일은 5,000-10,000km 또는 6개월마다 교환하는 것이 권장됩니다. 차량 매뉴얼을 참고하세요.',
+      en: 'Engine oil should typically be changed every 5,000-10,000 km or every 6 months. Check your vehicle manual.',
+      si: 'සාමාන්‍යයෙන් එන්ජින් තෙල් කි.මී. 5,000-10,000 ක් හෝ මාස 6 කට වරක් මාරු කළ යුතුය. වාහන මෙහෙයුම් අත්පොත බලන්න.'
+    }
+  },
+  {
+    id: 17, category: '자동차 정비', cat_en: 'Maintenance',
+    q: { ko: '타이어 공기압이 너무 낮으면 어떻게 됩니까?', en: 'What if tire pressure is too low?', si: 'ටයර් වාත පීඩනය ඉතා අඩු නම් කුමක් වේද?' },
+    options: [
+      { ko: '연비가 좋아진다', en: 'Better fuel economy', si: 'ඉන්ධන කාර්යක්ෂමතාව වැඩිවේ' },
+      { ko: '타이어 수명이 짧아지고 연비가 나빠진다', en: 'Shorter tire life, worse fuel economy', si: 'ටයර් ආයු කාලය අඩුවී, ඉන්ධන කාර්යක්ෂමතාව අඩුවේ' },
+      { ko: '아무 영향 없다', en: 'No effect', si: 'බලපෑමක් නැත' },
+      { ko: '주행 속도가 빨라진다', en: 'Faster driving', si: 'වේගයෙන් රිය පැදවිය හැකි වේ' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '공기압이 낮으면 타이어가 더 많이 마모되어 수명이 짧아지고, 회전 저항이 커져 연비가 나빠집니다.',
+      en: 'Low tire pressure causes faster wear, shorter tire life, and worse fuel efficiency due to higher rolling resistance.',
+      si: 'වාත පීඩනය අඩු වූ විට, ටයර වැඩිපුර ගෙවී, ආයු කාලය අඩුවී, භ්‍රමණ ප්‍රතිරෝධය වැඩිවී, ඉන්ධන කාර්යක්ෂමතාව අඩුවේ.'
+    }
+  },
+  {
+    id: 18, category: '도로교통법규', cat_en: 'Traffic Law',
+    q: { ko: '신호등이 황색일 때 운전자가 해야 할 행동은?', en: 'What to do at a yellow light?', si: 'කහ එළියකදී රියදුරු කළ යුත්තේ?' },
+    options: [
+      { ko: '빠르게 통과한다', en: 'Speed through', si: 'වේගයෙන් පසුකරයි' },
+      { ko: '안전하게 정지선 앞에 정지한다', en: 'Stop safely before the line', si: 'රේඛාවට පෙර ආරක්ෂිතව නවතියි' },
+      { ko: '속도를 유지한다', en: 'Maintain speed', si: 'වේගය පවත්වා ගනී' },
+      { ko: '차선을 변경한다', en: 'Change lanes', si: 'මංතීරුව මාරු කරයි' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '황색 신호는 정지를 의미합니다. 정지선 앞에서 안전하게 정지해야 하며, 이미 교차로에 진입한 경우에만 신속히 통과합니다.',
+      en: 'Yellow means stop. Stop safely before the line. Only proceed if already in the intersection.',
+      si: 'කහ එළියේ අරුත නැවතීමයි. රේඛාවට පෙර ආරක්ෂිතව නවතන්න. දැනටමත් හන්දියට ඇතුළු වී ඇත්නම් පමණක් ඉදිරියට යන්න.'
+    }
+  },
+  {
+    id: 19, category: '안전운전', cat_en: 'Safe Driving',
+    q: { ko: '운전 중 가장 안전한 차로 변경 방법은?', en: 'Safest way to change lanes?', si: 'මංතීරු මාරු කිරීමේ ආරක්ෂිතම ක්‍රමය?' },
+    options: [
+      { ko: '방향지시등 없이 빠르게 변경한다', en: 'Change quickly without signal', si: 'සංඥාවක් නැතිව ඉක්මනින් මාරු කරයි' },
+      { ko: '방향지시등을 켜고 사이드미러와 사각지대를 확인 후 변경한다', en: 'Signal, check mirrors and blind spots, then change', si: 'සංඥාව දැල්වා, කැඩපත් සහ අන්ධ ස්ථාන පරීක්ෂා කර, මාරු කරයි' },
+      { ko: '경적을 울리며 변경한다', en: 'Honk while changing', si: 'බෙල් නාද කරමින් මාරු කරයි' },
+      { ko: '뒷차에게 양보를 요청한다', en: 'Ask car behind to yield', si: 'පසුපස වාහනයට මග හැරීමට කියයි' },
+    ],
+    correct: 1,
+    explain: {
+      ko: '차로 변경 전 방향지시등을 켜고, 사이드미러와 사각지대를 모두 확인한 후 안전하게 변경해야 합니다.',
+      en: 'Before changing lanes, signal, check side mirrors and blind spots, then change safely.',
+      si: 'මංතීරු මාරු කිරීමට පෙර, සංඥාව දල්වා, පැති කැඩපත් සහ අන්ධ ස්ථාන පරීක්ෂා කර, ආරක්ෂිතව මාරු වන්න.'
+    }
+  },
+  {
+    id: 20, category: '도로교통법규', cat_en: 'Traffic Law',
+    q: { ko: '한국에서 운전면허 학과시험 합격점수는? (2종 보통 기준)', en: 'Passing score for driving theory test in Korea? (Class 2)', si: 'කොරියාවේ රියදුරු සිද්ධාන්ත විභාගයේ සමත් වීමේ ලකුණු? (2 වර්ගය)' },
+    options: [
+      { ko: '40점 이상', en: '40 or more', si: '40 හෝ වැඩි' },
+      { ko: '50점 이상', en: '50 or more', si: '50 හෝ වැඩි' },
+      { ko: '60점 이상', en: '60 or more', si: '60 හෝ වැඩි' },
+      { ko: '70점 이상', en: '70 or more', si: '70 හෝ වැඩි' },
+    ],
+    correct: 2,
+    explain: {
+      ko: '2종 보통 면허는 60점 이상, 1종 보통 면허는 70점 이상이 합격선입니다. 학과시험은 100점 만점, 40문제로 출제됩니다.',
+      en: 'Class 2 needs 60+, Class 1 needs 70+. The test has 40 questions, scored out of 100.',
+      si: '2 වර්ගය සඳහා 60+, 1 වර්ගය සඳහා 70+ ලකුණු අවශ්‍යය. විභාගයේ ප්‍රශ්න 40 ක් ඇති අතර 100ක් ලකුණු ඇත.'
+    }
+  },
+];
+
+// ===========================================
+// STATE
+// ===========================================
+const state = {
+  currentLang: 'si',
+  currentScreen: 'splash',
+  questionIndex: 0,
+  selectedOption: null,
+  answered: false,
+  correctCount: 0,
+  wrongCount: 0,
+  history: ['splash'],
+};
+
+// ===========================================
+// LANGUAGE LIST RENDER
+// ===========================================
+function renderLanguageList(filter = '') {
+  const list = document.getElementById('lang-list');
+  const filterLower = filter.toLowerCase();
+  const examLangs = LANGUAGES.filter(l => l.tier === 'exam' && (
+    !filter || l.native.toLowerCase().includes(filterLower) || l.latin.toLowerCase().includes(filterLower) || l.code.includes(filterLower)
+  ));
+  const studyLangs = LANGUAGES.filter(l => l.tier === 'study' && (
+    !filter || l.native.toLowerCase().includes(filterLower) || l.latin.toLowerCase().includes(filterLower) || l.code.includes(filterLower)
+  ));
+
+  let html = '';
+  if (examLangs.length > 0) {
+    html += `<div class="lang-section-head"><span>● Exam-ready · 시험 가능</span><span class="count">${examLangs.length}</span></div>`;
+    examLangs.forEach(lang => {
+      const sel = state.currentLang === lang.code ? 'selected' : '';
+      html += `<div class="lang-item ${sel}" onclick="selectLang('${lang.code}')">
+        <div>
+          <div class="native">${lang.native}</div>
+          <div class="latin">${lang.latin}</div>
+        </div>
+        <div class="check">${state.currentLang === lang.code ? '✓' : ''}</div>
+      </div>`;
+    });
+  }
+  if (studyLangs.length > 0) {
+    html += `<div class="lang-section-head"><span>○ Study only · 학습 전용</span><span class="count alt">${studyLangs.length}</span></div>`;
+    studyLangs.forEach(lang => {
+      const sel = state.currentLang === lang.code ? 'selected' : '';
+      html += `<div class="lang-item ${sel}" onclick="selectLang('${lang.code}')">
+        <div>
+          <div class="native">${lang.native}</div>
+          <div class="latin">${lang.latin}</div>
+        </div>
+        <div class="check">${state.currentLang === lang.code ? '✓' : ''}</div>
+      </div>`;
+    });
+  }
+  if (examLangs.length === 0 && studyLangs.length === 0) {
+    html = '<div style="text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px;">No languages found · 검색 결과 없음</div>';
+  }
+  list.innerHTML = html;
+}
+
+function filterLangs(value) {
+  renderLanguageList(value);
+}
+
+function selectLang(code) {
+  state.currentLang = code;
+  document.getElementById('lang-continue').disabled = false;
+  // Update CTA text
+  const cta = document.getElementById('lang-continue');
+  const continueText = CONTINUE_TEXT[code] || 'Continue';
+  cta.textContent = `${continueText} →`;
+  renderLanguageList(document.getElementById('lang-input').value);
+}
+
+function confirmLang() {
+  // Update home greeting based on lang
+  const greeting = GREETINGS[state.currentLang] || 'Welcome';
+  document.getElementById('home-greeting').textContent = `${greeting} · Welcome`;
+  goToScreen('home-screen');
+}
+
+// ===========================================
+// NAVIGATION
+// ===========================================
+function goToScreen(screenId) {
+  const current = document.querySelector('.screen.active');
+  const target = document.getElementById(screenId);
+  if (current === target) return;
+
+  if (current) {
+    current.classList.remove('active');
+    current.classList.add('prev');
+    setTimeout(() => current.classList.remove('prev'), 350);
+  }
+  target.classList.add('active');
+  state.currentScreen = screenId;
+  state.history.push(screenId);
+}
+
+function goToLang() {
+  goToScreen('lang-screen');
+  renderLanguageList();
+}
+
+function goToSplash() {
+  goToScreen('splash');
+}
+
+function skipToHome() {
+  state.currentLang = 'si';
+  document.getElementById('home-greeting').textContent = 'ආයුබෝවන් · Welcome';
+  goToScreen('home-screen');
+}
+
+function goHome() {
+  state.questionIndex = 0;
+  state.selectedOption = null;
+  state.answered = false;
+  state.correctCount = 0;
+  state.wrongCount = 0;
+  // Update home progress
+  const total = QUESTIONS.length;
+  const solved = state.correctCount + state.wrongCount;
+  document.getElementById('home-solved').textContent = '0';
+  document.getElementById('home-acc').textContent = '—';
+  document.getElementById('home-bar').style.width = '0%';
+  goToScreen('home-screen');
+}
+
+function alertPreview(message) {
+  alert(message);
+}
+
+// ===========================================
+// PRACTICE MODE
+// ===========================================
+function startPractice() {
+  state.questionIndex = 0;
+  state.correctCount = 0;
+  state.wrongCount = 0;
+  state.selectedOption = null;
+  state.answered = false;
+  goToScreen('question-screen');
+  renderQuestion();
+}
+
+function startMockExam() {
+  alertPreview('실전 모의고사는 v0.2에서 추가됩니다.\nMock exam coming in v0.2 (40 questions, 40 minutes).');
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[state.questionIndex];
+  const lang = state.currentLang;
+  const total = QUESTIONS.length;
+
+  document.getElementById('q-counter').textContent = `${state.questionIndex + 1} / ${total}`;
+  document.getElementById('q-bar').style.width = `${((state.questionIndex) / total) * 100}%`;
+
+  // Determine question text language
+  const qText = q.q[lang] || q.q.en;
+  const qTrans = lang === 'ko' ? '' : (q.q.ko);
+
+  let signHtml = '';
+  if (q.sign) {
+    if (q.sign === 'speed-50') signHtml = '<div class="sign-speed">50</div>';
+    else if (q.sign === 'stop') signHtml = '<div class="sign-stop">정지<br>STOP</div>';
+    else if (q.sign === 'noentry') signHtml = '<div class="sign-noentry"></div>';
+    else if (q.sign === 'yield') signHtml = '<div class="sign-yield"></div>';
+    signHtml = `<div class="q-image">${signHtml}</div>`;
+  }
+
+  let optsHtml = '';
+  q.options.forEach((opt, idx) => {
+    const optText = opt[lang] || opt.en;
+    const optTrans = lang === 'ko' || lang === 'en' ? '' : opt.ko;
+    optsHtml += `<div class="q-opt" data-idx="${idx}" onclick="selectOption(${idx})">
+      <div class="opt-key">${String.fromCharCode(65 + idx)}</div>
+      <div>
+        <div class="q-opt-text">${optText}</div>
+        ${optTrans ? `<div class="q-opt-trans">${optTrans}</div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  const content = `
+    <span class="q-tag">${q.category} · ${q.cat_en}</span>
+    <div class="q-text-ko">${qText}</div>
+    ${qTrans ? `<div class="q-text-trans">${qTrans}</div>` : ''}
+    ${signHtml}
+    <div class="q-options">${optsHtml}</div>
+  `;
+  document.getElementById('q-content').innerHTML = content;
+  document.getElementById('q-submit').disabled = true;
+  document.getElementById('q-submit').textContent = 'Submit · 제출';
+  state.selectedOption = null;
+  state.answered = false;
+}
+
+function selectOption(idx) {
+  if (state.answered) return;
+  state.selectedOption = idx;
+  document.querySelectorAll('.q-opt').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+  document.getElementById('q-submit').disabled = false;
+}
+
+function submitAnswer() {
+  if (state.selectedOption === null) return;
+  state.answered = true;
+  const q = QUESTIONS[state.questionIndex];
+  const isCorrect = state.selectedOption === q.correct;
+
+  if (isCorrect) state.correctCount++;
+  else state.wrongCount++;
+
+  // Mark options
+  document.querySelectorAll('.q-opt').forEach((el, i) => {
+    el.classList.remove('selected');
+    if (i === q.correct) el.classList.add('correct');
+    else if (i === state.selectedOption && !isCorrect) el.classList.add('wrong');
+  });
+
+  // Show feedback
+  showFeedback(isCorrect, q);
+}
+
+function showFeedback(isCorrect, q) {
+  const lang = state.currentLang;
+  const overlay = document.getElementById('fb-overlay');
+  const sheet = document.getElementById('fb-sheet');
+  const icon = document.getElementById('fb-icon');
+  const title = document.getElementById('fb-title');
+  const subtitle = document.getElementById('fb-subtitle');
+  const explainKo = document.getElementById('fb-explain-ko');
+  const explainTrans = document.getElementById('fb-explain-trans');
+
+  if (isCorrect) {
+    icon.className = 'fb-icon correct';
+    icon.textContent = '✓';
+    title.textContent = 'Correct.';
+    subtitle.textContent = '정답입니다 · හරි';
+  } else {
+    icon.className = 'fb-icon wrong';
+    icon.textContent = '✕';
+    title.textContent = 'Try again.';
+    subtitle.textContent = '오답입니다 · වැරදියි';
+  }
+
+  explainKo.textContent = q.explain.ko;
+  const transText = q.explain[lang] && lang !== 'ko' ? q.explain[lang] : '';
+  explainTrans.textContent = transText;
+  if (!transText) explainTrans.style.display = 'none';
+  else explainTrans.style.display = 'block';
+
+  setTimeout(() => {
+    overlay.classList.add('active');
+    sheet.classList.add('active');
+  }, 300);
+}
+
+function closeFeedback() {
+  document.getElementById('fb-overlay').classList.remove('active');
+  document.getElementById('fb-sheet').classList.remove('active');
+}
+
+function nextQuestion() {
+  closeFeedback();
+  setTimeout(() => {
+    state.questionIndex++;
+    if (state.questionIndex >= QUESTIONS.length) {
+      showResult();
+    } else {
+      renderQuestion();
+    }
+  }, 200);
+}
+
+function exitQuestion() {
+  if (confirm('연습을 종료하시겠습니까?\nExit practice?')) {
+    goHome();
+  }
+}
+
+function markBookmark() {
+  const btn = event.target;
+  btn.textContent = '★ Saved';
+  btn.style.color = 'var(--saffron)';
+  setTimeout(() => {
+    btn.textContent = '★ Save';
+    btn.style.color = '';
+  }, 1500);
+}
+
+// ===========================================
+// RESULT SCREEN
+// ===========================================
+function showResult() {
+  const total = QUESTIONS.length;
+  const correct = state.correctCount;
+  const pct = Math.round((correct / total) * 100);
+  // Driving test: Class 2 needs 60+, our practice scoring: %
+  const passed = pct >= 60;
+
+  const resultTop = document.getElementById('result-top');
+  resultTop.classList.toggle('fail', !passed);
+
+  document.getElementById('r-score').textContent = correct;
+  document.getElementById('r-correct').textContent = correct;
+  document.getElementById('r-wrong').textContent = state.wrongCount;
+  document.getElementById('r-pct').textContent = `${pct}%`;
+  document.getElementById('r-pass').textContent = passed ? '✓ Passing score' : '✗ Below 60%';
+
+  const fb = document.getElementById('r-feedback');
+  if (passed && pct >= 90) {
+    fb.innerHTML = '훌륭합니다! 시험에 응시할 준비가 되어 있습니다.<br><span style="font-size: 12px; color: var(--muted); font-style: italic;">Excellent! You\'re ready for the actual test.</span>';
+  } else if (passed) {
+    fb.innerHTML = '잘 하셨어요! 더 많은 문제를 풀어 합격선을 안정적으로 넘기세요.<br><span style="font-size: 12px; color: var(--muted); font-style: italic;">Good progress! Practice more to stabilize your score.</span>';
+  } else {
+    fb.innerHTML = '조금 더 연습이 필요해요. 표지판과 안전운전 부분을 다시 학습해보세요.<br><span style="font-size: 12px; color: var(--muted); font-style: italic;">More practice needed. Review signs and safe driving.</span>';
+  }
+
+  goToScreen('result-screen');
+}
+
+// ===========================================
+// INIT
+// ===========================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Pre-render lang list
+  renderLanguageList();
+});
+
+// Prevent zoom on iOS
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
+document.addEventListener('gestureend', e => e.preventDefault());
+</script>
+
+</body>
+</html>
