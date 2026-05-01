@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한길 도구 1: CSV 청소기 (Cleaner)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #F2EDE2;
+  --cream-deep: #E8E0CE;
+  --ink: #14110D;
+  --ink-soft: #4A4438;
+  --muted: #8A8170;
+  --line: #D9D0BC;
+  --primary: #14315E;
+  --saffron: #D6691E;
+  --green: #2E6B3E;
+  --red: #B5342A;
+  --paper: #FFFFFF;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+  padding: 32px 20px;
+  min-height: 100vh;
+}
+.container { max-width: 900px; margin: 0 auto; }
+.header {
+  text-align: center;
+  padding: 32px 0 48px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 48px;
+}
+.header .badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background: var(--ink);
+  color: var(--cream);
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+.header h1 {
+  font-family: 'Bricolage Grotesque', serif;
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.header h1 .ac { color: var(--saffron); font-style: italic; }
+.header p {
+  color: var(--ink-soft);
+  font-size: 16px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+.step {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 28px;
+  margin-bottom: 20px;
+}
+.step-num {
+  display: inline-block;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--saffron);
+  color: white;
+  text-align: center;
+  line-height: 32px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  margin-right: 12px;
+}
+.step h2 {
+  font-family: 'Bricolage Grotesque', serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+.step p { color: var(--ink-soft); margin-bottom: 16px; }
+.upload-area {
+  border: 2px dashed var(--line);
+  border-radius: 14px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--cream);
+}
+.upload-area:hover, .upload-area.dragover {
+  border-color: var(--saffron);
+  background: #FFF8F0;
+}
+.upload-area.has-file {
+  border-style: solid;
+  border-color: var(--green);
+  background: #F0F7F2;
+}
+.upload-area .icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+.upload-area .text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.upload-area .sub {
+  font-size: 13px;
+  color: var(--muted);
+}
+input[type="file"] { display: none; }
+.btn {
+  display: inline-block;
+  padding: 14px 28px;
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  border-radius: 12px;
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled {
+  background: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.btn.green { background: var(--green); }
+.btn.saffron { background: var(--saffron); }
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.stat-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.stat-card .num {
+  font-family: 'Bricolage Grotesque', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.stat-card .lbl {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.preview {
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 400px;
+  overflow-y: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+th {
+  background: var(--cream-deep);
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+}
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #F0EBDD;
+  vertical-align: top;
+}
+td.id { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--saffron); }
+td.cat {
+  font-size: 10px;
+  white-space: nowrap;
+}
+td.cat span {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: var(--cream-deep);
+  font-weight: 600;
+}
+td.ans {
+  font-weight: 700;
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  text-align: center;
+}
+.warning {
+  background: #FFF8E1;
+  border-left: 3px solid var(--saffron);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  margin: 16px 0;
+}
+.success {
+  background: #F0F7F2;
+  border-left: 3px solid var(--green);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  margin: 16px 0;
+}
+.hidden { display: none; }
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+.info-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.info-card .lbl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--saffron);
+  margin-bottom: 6px;
+}
+.info-card .val {
+  font-size: 14px;
+  font-weight: 500;
+}
+.cat-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.cat-pill {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  padding: 8px 14px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cat-pill .count {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--saffron);
+}
+@media (max-width: 600px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .info-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="badge">Tool 1 / 4 · CSV Cleaner</div>
+    <h1>한길 <span class="ac">청소기</span>.</h1>
+    <p>도로교통공단 원본 CSV를 깨끗한 데이터로 변환합니다. 본인 컴퓨터에서만 작동, 데이터는 어디에도 업로드되지 않습니다.</p>
+  </div>
+
+  <!-- STEP 1: Upload -->
+  <div class="step">
+    <h2><span class="step-num">1</span>CSV 파일 업로드</h2>
+    <p>도로교통공단 공식 문제은행 CSV 파일을 업로드하세요. (questions-ko.csv)</p>
+    <label for="file-input">
+      <div class="upload-area" id="upload-area">
+        <div class="icon">📂</div>
+        <div class="text">CSV 파일을 클릭하거나 끌어다 놓으세요</div>
+        <div class="sub">지원 형식: .csv (UTF-8 BOM)</div>
+      </div>
+    </label>
+    <input type="file" id="file-input" accept=".csv">
+  </div>
+
+  <!-- STEP 2: Stats -->
+  <div class="step hidden" id="stats-step">
+    <h2><span class="step-num">2</span>분석 결과</h2>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="num" id="stat-total">0</div>
+        <div class="lbl">총 문항</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-clean">0</div>
+        <div class="lbl">청소 완료</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-multi">0</div>
+        <div class="lbl">복수 정답</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-warn">0</div>
+        <div class="lbl">경고</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px;">
+      <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--ink-soft); letter-spacing: 0.05em; text-transform: uppercase;">카테고리별 분포</h3>
+      <div class="cat-breakdown" id="cat-breakdown"></div>
+    </div>
+
+    <div class="warning" id="warning-box" style="display: none;">
+      <strong>⚠️ 경고:</strong> <span id="warning-msg"></span>
+    </div>
+  </div>
+
+  <!-- STEP 3: Preview -->
+  <div class="step hidden" id="preview-step">
+    <h2><span class="step-num">3</span>미리보기 (처음 10개)</h2>
+    <p>청소된 데이터를 확인하세요. 카테고리는 자동 분류되었으며, Google Sheets에서 수동으로 변경 가능합니다.</p>
+    <div class="preview">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>카테고리</th>
+            <th>문제</th>
+            <th>선택지</th>
+            <th>정답</th>
+          </tr>
+        </thead>
+        <tbody id="preview-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STEP 4: Download -->
+  <div class="step hidden" id="download-step">
+    <h2><span class="step-num">4</span>다운로드</h2>
+    <p>두 가지 형식으로 다운로드 가능합니다. <strong>Google Sheets용 TSV</strong>를 추천합니다 (탭으로 구분된 형식이라 시트에 복붙 시 자동으로 칼럼 분배됨).</p>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="lbl">📊 Google Sheets용 (TSV)</div>
+        <div class="val">시트에 복사 → 붙여넣기 한 번에 완료. 추천!</div>
+      </div>
+      <div class="info-card">
+        <div class="lbl">💾 깔끔한 CSV</div>
+        <div class="val">엑셀에서 열거나 다른 도구에서 사용.</div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top: 20px;">
+      <button class="btn green" id="download-tsv">📊 TSV 다운로드 (Sheets용)</button>
+      <button class="btn" id="download-csv">💾 CSV 다운로드</button>
+      <button class="btn saffron" id="copy-clipboard">📋 클립보드에 복사</button>
+    </div>
+
+    <div class="success" id="success-msg" style="display: none;">
+      <strong>✓ 성공!</strong> <span id="success-text"></span>
+    </div>
+
+    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line);">
+      <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--ink-soft); letter-spacing: 0.05em; text-transform: uppercase;">📝 다음 단계 (Google Sheets 사용)</h3>
+      <ol style="padding-left: 20px; line-height: 1.8; font-size: 14px; color: var(--ink-soft);">
+        <li>위 <strong>"📋 클립보드에 복사"</strong> 버튼 클릭</li>
+        <li><a href="https://sheets.google.com" target="_blank" style="color: var(--primary); font-weight: 600;">Google Sheets</a> 새 시트 열기</li>
+        <li>A1 셀 클릭 → <strong>Ctrl+V</strong>로 붙여넣기</li>
+        <li>1,000행이 자동으로 분배됨!</li>
+        <li>파일명을 <strong>"한길 - 22개 언어 번역 마스터"</strong>로 변경</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==========================================
+// CATEGORY CLASSIFICATION RULES
+// ==========================================
+const CATEGORY_RULES = [
+  // 신호와 표지 (Signs)
+  {
+    cat: '신호와 표지',
+    keywords: ['표지', '표지판', '신호', '신호등', '신호기', '경음기', '경광등', '교통안전표지', '주의표지', '규제표지', '지시표지', '보조표지', '노면표시', '차선', '깜빡이', '방향지시', '비상등', '전조등', '안개등', '미등', '점멸', '황색', '적색', '녹색']
+  },
+  // 응급처치
+  {
+    cat: '응급처치',
+    keywords: ['응급', '응급처치', '심폐소생', 'CPR', '구급', '부상', '구조', '119', '응급실', '의식', '맥박', '호흡', '출혈', '골절', '구토', '기도확보']
+  },
+  // 자동차 정비
+  {
+    cat: '자동차 정비',
+    keywords: ['엔진오일', '타이어', '냉각수', '브레이크액', '점화플러그', '배터리', '연료', '연비', '엔진', '미션', '클러치', '필터', 'ABS', '에어백', '계기판', '경고등', 'EPS', '와이퍼', '서스펜션']
+  },
+  // 안전운전
+  {
+    cat: '안전운전',
+    keywords: ['졸음', '음주', '피로', '집중', '주의', '시야', '예측', '방어운전', '안전벨트', '좌석안전띠', '동승자', '영유아', '어린이', '노인', '장애인', '보행자', '횡단', '비', '눈', '안개', '빙판', '커브', '내리막', '오르막', '야간', '주간', '시속', '속도', '제한속도', '안전거리', '제동거리']
+  },
+  // 도로교통법규 (default - everything else with legal terms)
+  {
+    cat: '도로교통법규',
+    keywords: ['도로교통법', '면허', '면허증', '범칙금', '과태료', '벌점', '벌칙', '처벌', '단속', '운전면허', '취소', '정지', '갱신', '적성검사', '교차로', '횡단보도', '정차', '주차', '추월', '앞지르기', '유턴', '차로', '차선변경', '고속도로', '자동차전용도로', '일반도로', '이면도로', '진입', '진출', '톨게이트', '하이패스']
+  },
+];
+
+const DEFAULT_CATEGORY = '도로교통법규';
+
+// ==========================================
+// PARSE CSV (UTF-8 BOM aware)
+// ==========================================
+function parseCSV(text) {
+  // Strip BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+  const rows = [];
+  let cur = [];
+  let cell = '';
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cell += '"'; i += 2; continue; }
+        inQuotes = false; i++; continue;
+      }
+      cell += c; i++;
+    } else {
+      if (c === '"') { inQuotes = true; i++; continue; }
+      if (c === ',') { cur.push(cell); cell = ''; i++; continue; }
+      if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        cur.push(cell); rows.push(cur); cur = []; cell = ''; i++; continue;
+      }
+      cell += c; i++;
+    }
+  }
+  if (cell || cur.length) { cur.push(cell); rows.push(cur); }
+  return rows;
+}
+
+// ==========================================
+// CLEAN A QUESTION
+// ==========================================
+function cleanQuestion(text) {
+  if (!text) return '';
+  // Remove leading number like "1. " or "123. "
+  text = text.replace(/^\d+\.\s*/, '');
+  // Remove "(홈페이지 참조)" markers
+  text = text.replace(/\(홈페이지\s*참조\)/g, '').trim();
+  // Normalize whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+  return text;
+}
+
+function cleanOption(text) {
+  if (!text) return '';
+  // Remove leading ① ② ③ ④ ⑤ with optional space
+  text = text.replace(/^\s*[①②③④⑤]\s*/, '');
+  // Remove leading "1)" "2)" etc.
+  text = text.replace(/^\s*\d+\)\s*/, '');
+  // Normalize whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+  return text;
+}
+
+function parseAnswer(text) {
+  if (!text) return { primary: 0, all: [], multi: false };
+  // Examples: "■ 정답：4", "■ 정답：1, 4", "■ 정답 : 2"
+  const match = text.match(/[\d]+(?:\s*,\s*\d+)*/);
+  if (!match) return { primary: 0, all: [], multi: false };
+  const nums = match[0].split(/\s*,\s*/).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+  return {
+    primary: nums[0] || 0,
+    all: nums,
+    multi: nums.length > 1
+  };
+}
+
+function classifyCategory(qText, options) {
+  const fullText = qText + ' ' + options.join(' ');
+  // Score each category
+  let bestScore = 0;
+  let bestCat = DEFAULT_CATEGORY;
+  for (const rule of CATEGORY_RULES) {
+    let score = 0;
+    for (const kw of rule.keywords) {
+      const matches = (fullText.match(new RegExp(kw, 'g')) || []).length;
+      score += matches;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestCat = rule.cat;
+    }
+  }
+  return bestCat;
+}
+
+// ==========================================
+// MAIN PROCESS
+// ==========================================
+let cleanedData = null;
+
+function processCSV(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) {
+    alert('파일에 데이터가 부족합니다.');
+    return;
+  }
+
+  // Skip header
+  const dataRows = rows.slice(1);
+  const cleaned = [];
+  let warnings = 0;
+  let multiCount = 0;
+  const catCounts = {};
+
+  dataRows.forEach((row, idx) => {
+    if (!row || row.length < 6) return; // skip invalid rows
+    const [qRaw, o1Raw, o2Raw, o3Raw, o4Raw, o5Raw, ansRaw] = row;
+    if (!qRaw || qRaw.trim() === '') return;
+
+    const q = cleanQuestion(qRaw);
+    const opts = [
+      cleanOption(o1Raw),
+      cleanOption(o2Raw),
+      cleanOption(o3Raw),
+      cleanOption(o4Raw),
+    ];
+    if (o5Raw && o5Raw.trim()) opts.push(cleanOption(o5Raw));
+    const ans = parseAnswer(ansRaw);
+    const cat = classifyCategory(q, opts);
+
+    if (!q || opts.filter(o => o).length < 2 || ans.primary === 0) {
+      warnings++;
+      return;
+    }
+
+    if (ans.multi) multiCount++;
+    catCounts[cat] = (catCounts[cat] || 0) + 1;
+
+    const id = 'Q' + String(idx + 1).padStart(4, '0');
+    cleaned.push({
+      id,
+      cat,
+      q,
+      opts,
+      ans: ans.primary,
+      ansAll: ans.all.join(','),
+      multi: ans.multi
+    });
+  });
+
+  cleanedData = { items: cleaned, warnings, multiCount, catCounts };
+  renderResults();
+}
+
+function renderResults() {
+  const { items, warnings, multiCount, catCounts } = cleanedData;
+  document.getElementById('stats-step').classList.remove('hidden');
+  document.getElementById('preview-step').classList.remove('hidden');
+  document.getElementById('download-step').classList.remove('hidden');
+
+  document.getElementById('stat-total').textContent = items.length;
+  document.getElementById('stat-clean').textContent = items.length;
+  document.getElementById('stat-multi').textContent = multiCount;
+  document.getElementById('stat-warn').textContent = warnings;
+
+  if (warnings > 0) {
+    document.getElementById('warning-box').style.display = 'block';
+    document.getElementById('warning-msg').textContent = `${warnings}개 문항이 형식 오류로 제외되었습니다 (정답 누락, 선택지 부족 등).`;
+  }
+
+  // Category breakdown
+  const breakdown = document.getElementById('cat-breakdown');
+  breakdown.innerHTML = Object.entries(catCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, count]) => `<div class="cat-pill"><span>${cat}</span><span class="count">${count}</span></div>`)
+    .join('');
+
+  // Preview (first 10)
+  const previewBody = document.getElementById('preview-body');
+  previewBody.innerHTML = items.slice(0, 10).map(item => `
+    <tr>
+      <td class="id">${item.id}</td>
+      <td class="cat"><span>${item.cat}</span></td>
+      <td>${escapeHtml(item.q.substring(0, 80))}${item.q.length > 80 ? '...' : ''}</td>
+      <td style="font-size: 11px; color: var(--muted);">
+        ${item.opts.slice(0, 2).map(o => '• ' + escapeHtml(o.substring(0, 30)) + (o.length > 30 ? '...' : '')).join('<br>')}
+        ${item.opts.length > 2 ? '<br>...' : ''}
+      </td>
+      <td class="ans">${item.ansAll}</td>
+    </tr>
+  `).join('');
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ==========================================
+// EXPORT
+// ==========================================
+function generateOutput(separator) {
+  if (!cleanedData) return '';
+  const { items } = cleanedData;
+  // Header for the master sheet (matches the 22-language plan)
+  const headers = [
+    'ID', '카테고리', '한국어_문제',
+    '한국어_선택지1', '한국어_선택지2', '한국어_선택지3', '한국어_선택지4',
+    '정답_번호', '정답_복수',
+    // Translation columns for each language (AI + 통역사)
+    '영어_AI', '영어_검수',
+    '신할라_AI', '신할라_검수',
+    '타밀_AI', '타밀_검수',
+    '네팔_AI', '네팔_검수',
+    '벵골_AI', '벵골_검수',
+    '미얀마_AI', '미얀마_검수',
+    '우즈벡_AI', '우즈벡_검수',
+    '우르두_AI', '우르두_검수',
+    '힌디_AI', '힌디_검수',
+    '아랍_AI', '아랍_검수',
+    '터키_AI', '터키_검수',
+    '스페인_AI', '스페인_검수',
+    '중국_AI', '중국_검수',
+    '베트남_AI', '베트남_검수',
+    '일본_AI', '일본_검수',
+    '태국_AI', '태국_검수',
+    '인니_AI', '인니_검수',
+    '몽골_AI', '몽골_검수',
+    '러시아_AI', '러시아_검수',
+    '캄보디아_AI', '캄보디아_검수',
+    '필리핀_AI', '필리핀_검수',
+    '상태', '검수메모'
+  ];
+
+  const lines = [headers.join(separator)];
+
+  items.forEach(item => {
+    const row = [
+      item.id,
+      item.cat,
+      item.q,
+      item.opts[0] || '',
+      item.opts[1] || '',
+      item.opts[2] || '',
+      item.opts[3] || '',
+      item.ans,
+      item.multi ? item.ansAll : '',
+      // Empty translation columns (will be filled by AI tool next)
+      ...new Array(42).fill(''),
+      // Status
+      '대기', ''
+    ];
+    // Escape: replace newlines and separators in cells
+    const escaped = row.map(c => {
+      let s = String(c || '');
+      if (separator === ',' && (s.includes(',') || s.includes('"') || s.includes('\n'))) {
+        s = '"' + s.replace(/"/g, '""') + '"';
+      }
+      // For TSV, just remove tabs and newlines
+      if (separator === '\t') {
+        s = s.replace(/\t/g, ' ').replace(/\n/g, ' ').replace(/\r/g, '');
+      }
+      return s;
+    });
+    lines.push(escaped.join(separator));
+  });
+
+  return lines.join('\n');
+}
+
+function downloadFile(filename, content, type) {
+  // Add BOM for proper UTF-8 in Excel
+  const blob = new Blob(['\uFEFF' + content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('download-tsv').addEventListener('click', () => {
+  const out = generateOutput('\t');
+  downloadFile('hangil-master-sheet.tsv', out, 'text/tab-separated-values');
+  showSuccess('TSV 파일이 다운로드되었습니다. Google Sheets에서 import 가능.');
+});
+
+document.getElementById('download-csv').addEventListener('click', () => {
+  const out = generateOutput(',');
+  downloadFile('hangil-master-sheet.csv', out, 'text/csv');
+  showSuccess('CSV 파일이 다운로드되었습니다.');
+});
+
+document.getElementById('copy-clipboard').addEventListener('click', async () => {
+  const out = generateOutput('\t');
+  try {
+    await navigator.clipboard.writeText(out);
+    showSuccess(`${cleanedData.items.length}개 행이 클립보드에 복사되었습니다. Google Sheets A1 셀에 Ctrl+V 하세요.`);
+  } catch (e) {
+    showSuccess('복사 실패. TSV 파일을 다운로드해서 사용해주세요.');
+  }
+});
+
+function showSuccess(msg) {
+  const box = document.getElementById('success-msg');
+  document.getElementById('success-text').textContent = msg;
+  box.style.display = 'block';
+  setTimeout(() => box.style.display = 'none', 5000);
+}
+
+// ==========================================
+// FILE INPUT HANDLERS
+// ==========================================
+const fileInput = document.getElementById('file-input');
+const uploadArea = document.getElementById('upload-area');
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('dragover');
+});
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    alert('CSV 파일만 지원됩니다.');
+    return;
+  }
+  uploadArea.classList.add('has-file');
+  uploadArea.querySelector('.icon').textContent = '✓';
+  uploadArea.querySelector('.text').textContent = file.name;
+  uploadArea.querySelector('.sub').textContent = `${(file.size / 1024).toFixed(1)} KB · 처리 중...`;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      processCSV(e.target.result);
+      uploadArea.querySelector('.sub').textContent = `${(file.size / 1024).toFixed(1)} KB · 처리 완료 ✓`;
+    } catch (err) {
+      alert('파일 처리 중 오류: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+</script>
+
+</body>
+</html>

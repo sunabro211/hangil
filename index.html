@@ -7,16 +7,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#F2EDE2">
 <title>한길 · HanGil</title>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-title" content="한길">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {});
-    });
-  }
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -943,7 +933,7 @@
       <div class="road"></div>
     </div>
     <h1>Han<span class="ac">Gil</span></h1>
-    <div class="tagline">한길 · One Road. One Pass.sunabro</div>
+    <div class="tagline">한길 · One Road. One Pass.</div>
     <button class="btn-primary splash-cta" onclick="goToLang()">Start · 시작하기 →</button>
     <div class="splash-skip" onclick="skipToHome()">Skip to demo</div>
   </div>
@@ -983,7 +973,7 @@
       </div>
       <div class="progress-card">
         <div class="pc-label">Practice mode · 연습</div>
-        <div class="pc-day">0<span class="total">/20</span></div>
+        <div class="pc-day">0<span class="total" id="home-total">/0</span></div>
         <div class="pc-bar"><div id="home-bar"></div></div>
         <div class="pc-stats">
           <div><strong id="home-solved">0</strong>Solved</div>
@@ -996,7 +986,7 @@
           <div class="qc-ic">◐</div>
           <div>
             <h4>주제별 연습</h4>
-            <div class="qc-sub">Topic practice · 20 Q</div>
+            <div class="qc-sub" id="practice-count">Topic practice</div>
           </div>
         </div>
         <div class="qcard c2" onclick="startMockExam()">
@@ -1188,334 +1178,79 @@ const CONTINUE_TEXT = {
 };
 
 // ===========================================
-// SAMPLE QUESTIONS (20 questions, KR + EN + SI)
+// QUESTIONS (loaded from data/questions.json)
 // ===========================================
-const QUESTIONS = [
-  {
-    id: 1, category: '신호와 표지', cat_en: 'Signs',
-    sign: 'speed-50',
-    q: { ko: '다음 표지판이 있는 도로에서 차량의 최고 속도는?', en: 'What is the maximum speed on a road with this sign?', si: 'මෙම සංඥාව ඇති පාරක උපරිම වේගය කවරේද?' },
-    options: [
-      { ko: '시속 30km 이하', en: '30 km/h or less', si: 'පැයට කි.මී. 30 හෝ අඩු' },
-      { ko: '시속 50km 이하', en: '50 km/h or less', si: 'පැයට කි.මී. 50 හෝ අඩු' },
-      { ko: '시속 60km 이하', en: '60 km/h or less', si: 'පැයට කි.මී. 60 හෝ අඩු' },
-      { ko: '제한 없음', en: 'No limit', si: 'සීමාවක් නැත' },
-    ],
-    correct: 1,
+let QUESTIONS = [];  // Will be populated by loadQuestions()
+
+// Convert sheet JSON format to app format
+function transformQuestion(item, langCode) {
+  const tr = item.translations && item.translations[langCode];
+  const ko = item.ko || {};
+  
+  // Skip if translation not approved (when approvedOnly mode used)
+  if (!tr) return null;
+  
+  // Determine sign type from category + content
+  let sign = null;
+  const qText = (ko.question || '').toLowerCase();
+  if (qText.includes('속도') || qText.includes('50km') || qText.includes('60km')) sign = 'speed-50';
+  else if (qText.includes('정지')) sign = 'stop';
+  else if (qText.includes('진입금지') || qText.includes('진입 금지')) sign = 'noentry';
+  else if (qText.includes('양보')) sign = 'yield';
+  
+  return {
+    id: item.id,
+    category: item.category || '도로교통법규',
+    cat_en: 'Traffic Law',
+    sign: sign,
+    q: {
+      ko: ko.question || '',
+      en: '',  // not used in current app
+      si: tr.question || ko.question
+    },
+    options: (ko.options || []).map((opt, idx) => ({
+      ko: opt,
+      en: '',
+      si: (tr.options && tr.options[idx]) || opt
+    })),
+    correct: (item.answer || 1) - 1,  // convert 1-indexed to 0-indexed
     explain: {
-      ko: '제한속도 표지판(50)은 표지판이 있는 지점부터 다음 속도 표지판이 나올 때까지 시속 50km를 초과해서 운전할 수 없음을 의미합니다.',
-      en: 'A 50 km/h speed limit sign means you cannot drive over 50 km/h from this point until the next speed sign.',
-      si: 'වේග සීමා සංඥාවේ (50) අරුත නම්, එම සංඥාව ඇති ස්ථානයේ සිට ඊළඟ වේග සංඥාව දක්වා පැයට කි.මී. 50ට වඩා වේගයෙන් රිය පැදවිය නොහැකි බවයි.'
+      ko: ko.explanation || '',
+      en: '',
+      si: tr.explanation || ko.explanation || ''
     }
-  },
-  {
-    id: 2, category: '신호와 표지', cat_en: 'Signs',
-    sign: 'stop',
-    q: { ko: '이 표지판이 있는 곳에서 운전자가 해야 할 행동은?', en: 'What should a driver do at this sign?', si: 'මෙම සංඥාව ඇති ස්ථානයේ රියදුරු කළ යුත්තේ කුමක්ද?' },
-    options: [
-      { ko: '서행하며 통과한다', en: 'Slow down and pass', si: 'වේගය අඩු කර පසුකරයි' },
-      { ko: '경적을 울리고 통과한다', en: 'Honk and pass', si: 'බෙල් නාද කර පසුකරයි' },
-      { ko: '일시정지 후 안전을 확인하고 출발한다', en: 'Stop completely, check, then go', si: 'සම්පූර්ණයෙන් නවතා, පරීක්ෂා කර, ඉදිරියට යයි' },
-      { ko: '신호와 관계없이 빠르게 통과한다', en: 'Pass quickly regardless', si: 'සංඥාව නොසලකා වේගයෙන් පසුකරයි' },
-    ],
-    correct: 2,
-    explain: {
-      ko: '"정지(STOP)" 표지가 있는 곳에서는 반드시 일시정지하여 좌우 안전을 확인한 후 출발해야 합니다.',
-      en: 'At a STOP sign, you must come to a complete stop, check for safety in all directions, then proceed.',
-      si: '"STOP" සංඥාව ඇති ස්ථානයක දී, සම්පූර්ණයෙන් නැවතී, දෙපැත්තේ ආරක්ෂාව පරීක්ෂා කර පසුව පමණක් ඉදිරියට යා යුතුය.'
+  };
+}
+
+async function loadQuestions(langCode) {
+  langCode = langCode || 'si';
+  try {
+    const response = await fetch('data/questions.json?v=' + Date.now());
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    
+    if (!data.questions || !Array.isArray(data.questions)) {
+      throw new Error('Invalid JSON structure');
     }
-  },
-  {
-    id: 3, category: '신호와 표지', cat_en: 'Signs',
-    sign: 'noentry',
-    q: { ko: '이 표지판은 무엇을 의미합니까?', en: 'What does this sign mean?', si: 'මෙම සංඥාවේ අරුත කුමක්ද?' },
-    options: [
-      { ko: '주차 금지', en: 'No parking', si: 'වාහන නැවැත්වීම තහනම්' },
-      { ko: '진입 금지', en: 'No entry', si: 'ඇතුළු වීම තහනම්' },
-      { ko: '추월 금지', en: 'No overtaking', si: 'ඉස්සර කිරීම තහනම්' },
-      { ko: '유턴 금지', en: 'No U-turn', si: 'U-හැරවීම තහනම්' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '진입금지 표지는 차량이 그 방향으로 들어갈 수 없음을 의미합니다.',
-      en: 'A No Entry sign means vehicles cannot enter in that direction.',
-      si: 'ඇතුළු වීම තහනම් සංඥාවේ අරුත නම්, එම දිශාවට වාහන ඇතුළු විය නොහැකි බවයි.'
+    
+    // Transform and filter
+    const transformed = data.questions
+      .map(item => transformQuestion(item, langCode))
+      .filter(q => q !== null && q.options.length >= 2);
+    
+    if (transformed.length === 0) {
+      throw new Error('NO_TRANSLATIONS');
     }
-  },
-  {
-    id: 4, category: '도로교통법규', cat_en: 'Traffic Law',
-    q: { ko: '교차로에서 좌회전하려고 할 때 가장 안전한 운전 방법은?', en: 'What is the safest way to turn left at an intersection?', si: 'හන්දියකදී වමට හැරීමට ආරක්ෂිතම ක්‍රමය කුමක්ද?' },
-    options: [
-      { ko: '경적을 울리며 빠르게 통과한다', en: 'Honk and pass quickly', si: 'බෙල් නාදකර වේගයෙන් පසුකරයි' },
-      { ko: '속도를 줄이고 좌측 후방을 확인한다', en: 'Slow down and check left rear', si: 'වේගය අඩුකර වම් පසුපස පරීක්ෂා කරයි' },
-      { ko: '가속하며 진입한다', en: 'Accelerate while entering', si: 'වේගය වැඩිකරමින් ඇතුළුවෙයි' },
-      { ko: '정지선을 넘어 대기한다', en: 'Wait past the stop line', si: 'නැවතුම් රේඛාව පසුකර රැඳී සිටියි' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '좌회전 시에는 속도를 줄이고 후방 차량과 보행자를 확인한 후 안전하게 회전해야 합니다.',
-      en: 'When turning left, reduce speed and check for vehicles and pedestrians behind before turning safely.',
-      si: 'වමට හැරෙන විට, වේගය අඩුකර, පසුපස වාහන සහ පදිකයන් පරීක්ෂා කර, පසුව ආරක්ෂිතව හැරවිය යුතුය.'
-    }
-  },
-  {
-    id: 5, category: '도로교통법규', cat_en: 'Traffic Law',
-    q: { ko: '고속도로에서 시속 100km로 주행 시 안전거리는?', en: 'Safe distance at 100 km/h on a highway?', si: 'අධිවේගී මාර්ගයක පැයට කි.මී. 100 ක වේගයේදී ආරක්ෂිත දුර කවරේද?' },
-    options: [
-      { ko: '50m', en: '50m', si: 'මීටර් 50' },
-      { ko: '70m', en: '70m', si: 'මීටර් 70' },
-      { ko: '100m', en: '100m', si: 'මීටර් 100' },
-      { ko: '200m', en: '200m', si: 'මීටර් 200' },
-    ],
-    correct: 2,
-    explain: {
-      ko: '고속도로에서 안전거리는 일반적으로 시속과 동일한 m 단위입니다. 시속 100km에서는 약 100m가 안전거리입니다.',
-      en: 'On a highway, safe distance in meters typically equals your speed. At 100 km/h, keep ~100m distance.',
-      si: 'අධිවේගී මාර්ගයක ආරක්ෂිත දුර සාමාන්‍යයෙන් වේගයට සමාන මීටර් වේ. පැයට කි.මී. 100 දී මීටර් 100 ක් පැවැත්විය යුතුය.'
-    }
-  },
-  {
-    id: 6, category: '도로교통법규', cat_en: 'Traffic Law',
-    q: { ko: '음주운전 단속 기준이 되는 혈중알코올농도는?', en: 'Blood alcohol limit for DUI in Korea?', si: 'කොරියාවේ මත්පැන් පානය කර රිය පැදවීමේ රුධිර ඇල්කොහොල් සීමාව?' },
-    options: [
-      { ko: '0.01% 이상', en: '0.01% or more', si: '0.01% හෝ වැඩි' },
-      { ko: '0.03% 이상', en: '0.03% or more', si: '0.03% හෝ වැඩි' },
-      { ko: '0.05% 이상', en: '0.05% or more', si: '0.05% හෝ වැඩි' },
-      { ko: '0.08% 이상', en: '0.08% or more', si: '0.08% හෝ වැඩි' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '한국의 음주운전 단속 기준은 혈중알코올농도 0.03% 이상입니다 (2019년 6월부터). 0.03~0.08%는 면허정지, 0.08% 이상은 면허취소입니다.',
-      en: 'In Korea, the DUI threshold is 0.03% blood alcohol (since June 2019). 0.03-0.08% is license suspension; 0.08%+ is revocation.',
-      si: 'කොරියාවේ මත්පැන් පානය කර රිය පැදවීමේ සීමාව රුධිර ඇල්කොහොල් 0.03% (2019 ජූනි සිට). 0.03-0.08% බලපත්‍රය අත්හිටුවීමයි; 0.08% ට වැඩි නම් අවලංගු කිරීමයි.'
-    }
-  },
-  {
-    id: 7, category: '안전운전', cat_en: 'Safe Driving',
-    q: { ko: '비 오는 날 운전 시 가장 중요한 것은?', en: 'Most important thing when driving in rain?', si: 'වැසි දිනක රිය පැදවීමේදී වැදගත්ම දේ?' },
-    options: [
-      { ko: '평소보다 속도를 높인다', en: 'Drive faster than usual', si: 'සාමාන්‍යයට වඩා වේගයෙන් යයි' },
-      { ko: '평소보다 속도를 줄이고 안전거리를 늘린다', en: 'Reduce speed and increase distance', si: 'වේගය අඩුකර, දුර වැඩි කරයි' },
-      { ko: '경적을 자주 울린다', en: 'Honk frequently', si: 'නිරතුරුව බෙල් නාද කරයි' },
-      { ko: '비상등을 항상 켠다', en: 'Always use hazard lights', si: 'සැමවිටම බිය සංඥා දැල්වෙයි' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '비 오는 날에는 노면이 미끄러워 제동거리가 길어지므로, 평소보다 속도를 줄이고 안전거리를 충분히 확보해야 합니다.',
-      en: 'In rain, wet roads increase braking distance, so reduce speed and keep more distance from the car ahead.',
-      si: 'වැසි දිනක තෙත් මාර්ග නිසා බ්‍රේක් දුර වැඩි වේ, එබැවින් වේගය අඩුකර, ඉදිරි වාහනයෙන් වැඩි දුරක් පැවැත්විය යුතුය.'
-    }
-  },
-  {
-    id: 8, category: '안전운전', cat_en: 'Safe Driving',
-    q: { ko: '야간 운전 시 주의해야 할 사항으로 옳은 것은?', en: 'Which is correct for night driving?', si: 'රාත්‍රී කාලයේ රිය පැදවීමේදී නිවැරදි කරුණ?' },
-    options: [
-      { ko: '상향등을 항상 켜고 주행한다', en: 'Always use high beams', si: 'සැමවිටම ඉහළ-බීම් භාවිතා කරයි' },
-      { ko: '시야가 어두우므로 속도를 높여 빠르게 통과한다', en: 'Speed up due to dark visibility', si: 'අඳුර නිසා වේගය වැඩිකරයි' },
-      { ko: '대향차가 있을 때는 하향등으로 전환한다', en: 'Switch to low beams for oncoming cars', si: 'ඉදිරියට එන වාහනවලට පහළ-බීම් වෙත මාරු වෙයි' },
-      { ko: '음악을 크게 틀어 졸음을 쫓는다', en: 'Play loud music to stay awake', si: 'අවදියෙන් සිටීමට ශබ්දයෙන් සංගීතය අසයි' },
-    ],
-    correct: 2,
-    explain: {
-      ko: '야간 주행 중 대향차가 있을 때 상향등을 계속 켜면 상대 운전자가 눈부심을 일으켜 사고 위험이 높아집니다. 반드시 하향등으로 전환해야 합니다.',
-      en: 'High beams blind oncoming drivers and cause accidents. Always switch to low beams when other cars approach.',
-      si: 'ඉහළ-බීම් ඉදිරියට එන රියදුරන්ගේ ඇස් අඳුරු කර අනතුරු ඇතිකරයි. වෙනත් වාහන ළඟා වන විට පහළ-බීම් වෙත මාරු විය යුතුය.'
-    }
-  },
-  {
-    id: 9, category: '안전운전', cat_en: 'Safe Driving',
-    q: { ko: '졸음운전을 예방하는 방법으로 옳은 것은?', en: 'How to prevent drowsy driving?', si: 'නිදි රිය පැදවීම වළක්වන ක්‍රමය?' },
-    options: [
-      { ko: '커피만 마시면 충분하다', en: 'Coffee alone is enough', si: 'කෝපි පමණක් ප්‍රමාණවත්' },
-      { ko: '2시간마다 휴식을 취하고 충분한 수면을 취한다', en: 'Rest every 2 hours, get enough sleep', si: 'පැය 2කට වරක් විවේක ගෙන, ප්‍රමාණවත් නින්දක් ලබා ගනියි' },
-      { ko: '창문을 닫고 히터를 켠다', en: 'Close windows and turn on heater', si: 'ජනේල වසා හීටරය දල්වයි' },
-      { ko: '음악을 끄고 조용히 운전한다', en: 'Drive quietly without music', si: 'සංගීතයක් නැතිව නිහඬව රිය පදවයි' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '졸음운전 예방의 가장 효과적인 방법은 충분한 수면과 규칙적인 휴식입니다. 2시간마다 10-15분 휴식을 취하는 것이 권장됩니다.',
-      en: 'The best way to prevent drowsy driving is enough sleep and regular breaks. Take 10-15 min rest every 2 hours.',
-      si: 'නිදි රිය පැදවීම වැළැක්වීමට හොඳම ක්‍රමය නම් ප්‍රමාණවත් නින්දක් සහ නිතිපතා විවේකයන්ය. පැය 2කට වරක් මිනිත්තු 10-15ක විවේකයක් ගත යුතුය.'
-    }
-  },
-  {
-    id: 10, category: '신호와 표지', cat_en: 'Signs',
-    sign: 'yield',
-    q: { ko: '이 표지판은 무엇을 의미합니까?', en: 'What does this sign mean?', si: 'මෙම සංඥාවේ අරුත කුමක්ද?' },
-    options: [
-      { ko: '정지', en: 'Stop', si: 'නවතන්න' },
-      { ko: '양보', en: 'Yield', si: 'මග හරින්න' },
-      { ko: '진입금지', en: 'No entry', si: 'ඇතුළු වීම තහනම්' },
-      { ko: '주의', en: 'Caution', si: 'ප්‍රවේශම් වන්න' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '양보(Yield) 표지는 다른 차량이나 보행자에게 우선권을 양보해야 함을 의미합니다.',
-      en: 'A Yield sign means you must give the right-of-way to other vehicles or pedestrians.',
-      si: 'මග හරින (Yield) සංඥාවේ අරුත නම්, අන් වාහන හෝ පදිකයන්ට පෙර යාමට ඉඩ දිය යුතු බවයි.'
-    }
-  },
-  {
-    id: 11, category: '도로교통법규', cat_en: 'Traffic Law',
-    q: { ko: '어린이보호구역(스쿨존)에서의 제한속도는?', en: 'Speed limit in a school zone?', si: 'පාසල් කලාපයක වේග සීමාව?' },
-    options: [
-      { ko: '시속 20km 이하', en: '20 km/h or less', si: 'පැයට කි.මී. 20 හෝ අඩු' },
-      { ko: '시속 30km 이하', en: '30 km/h or less', si: 'පැයට කි.මී. 30 හෝ අඩු' },
-      { ko: '시속 40km 이하', en: '40 km/h or less', si: 'පැයට කි.මී. 40 හෝ අඩු' },
-      { ko: '시속 50km 이하', en: '50 km/h or less', si: 'පැයට කි.මී. 50 හෝ අඩු' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '어린이보호구역에서는 시속 30km 이하로 운행해야 합니다. 위반 시 일반 구역의 2배에 해당하는 벌점과 과태료가 부과됩니다.',
-      en: 'In a school zone, speed limit is 30 km/h. Violations incur 2x fines compared to regular zones.',
-      si: 'පාසල් කලාපයක වේග සීමාව පැයට කි.මී. 30 ය. උල්ලංඝනය කිරීම් සඳහා සාමාන්‍ය කලාපවලට වඩා දෙගුණයක දඩ ගැසේ.'
-    }
-  },
-  {
-    id: 12, category: '도로교통법규', cat_en: 'Traffic Law',
-    q: { ko: '안전벨트를 매지 않은 채 운전하면 어떻게 됩니까?', en: 'What happens if you drive without a seatbelt?', si: 'ආසන පටිය නොපැළඳ රිය පැදවුවොත් කුමක් වේද?' },
-    options: [
-      { ko: '아무런 처벌도 없다', en: 'No penalty', si: 'දඬුවමක් නැත' },
-      { ko: '경고만 받는다', en: 'Only a warning', si: 'අවවාදයක් පමණි' },
-      { ko: '운전자 본인 및 동승자 미착용 시 범칙금이 부과된다', en: 'Fines for driver and passengers', si: 'රියදුරු සහ මගීන්ට දඩ ගැසේ' },
-      { ko: '면허가 취소된다', en: 'License revoked', si: 'බලපත්‍රය අවලංගු වෙයි' },
-    ],
-    correct: 2,
-    explain: {
-      ko: '운전자뿐만 아니라 모든 동승자가 안전벨트를 매야 합니다. 미착용 시 범칙금이 부과됩니다.',
-      en: 'All occupants must wear seatbelts. Failure results in fines.',
-      si: 'රියදුරු පමණක් නොව, සියලු මගීන් ආසන පටි පැළඳිය යුතුය. නොකළහොත් දඬුවම් ලැබේ.'
-    }
-  },
-  {
-    id: 13, category: '안전운전', cat_en: 'Safe Driving',
-    q: { ko: '주행 중 휴대전화 사용에 대한 규정은?', en: 'Rules on phone use while driving?', si: 'රිය පදවන විට දුරකථන භාවිතය පිළිබඳ නීති?' },
-    options: [
-      { ko: '신호 대기 중에만 사용 가능', en: 'Only at red lights', si: 'රතු එළිවලදී පමණි' },
-      { ko: '핸즈프리 장치를 사용하면 가능', en: 'Hands-free device allowed', si: 'හැන්ඩ්ස්-ෆ්‍රී උපකරණ අවසර' },
-      { ko: '주행 중에는 절대 사용 불가', en: 'Never while driving', si: 'රිය පැදවීමේදී කිසි විටෙකත් භාවිතා නොකරන්න' },
-      { ko: '단문 메시지만 가능', en: 'Texting OK', si: 'කෙටි පණිවිඩ පමණි' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '주행 중 손에 들고 사용하는 것은 금지되며, 블루투스 등 핸즈프리 장치를 통한 통화는 허용됩니다.',
-      en: 'Hand-held phone use is banned. Hands-free (Bluetooth, etc.) calls are allowed.',
-      si: 'අතේ දරාගත් දුරකථන භාවිතය තහනම්ය. හැන්ඩ්ස්-ෆ්‍රී (බ්ලූටූත්) ඇමතුම්වලට අවසර ඇත.'
-    }
-  },
-  {
-    id: 14, category: '응급처치', cat_en: 'First Aid',
-    q: { ko: '교통사고 발생 시 가장 먼저 해야 할 일은?', en: 'First action after a traffic accident?', si: 'රථවාහන අනතුරක් සිදු වූ පසු පළමු ක්‍රියාව?' },
-    options: [
-      { ko: '경찰서로 직접 운전해서 간다', en: 'Drive to the police station', si: 'පොලීසියට කෙළින්ම යයි' },
-      { ko: '안전한 곳으로 차량을 이동시키고 부상자를 확인한다', en: 'Move car to safe area, check injuries', si: 'වාහනය ආරක්ෂිත ස්ථානයකට ගෙන, තුවාලකරුවන් පරීක්ෂා කරයි' },
-      { ko: '현장을 떠난다', en: 'Leave the scene', si: 'සිද්ධිය අතහැර යයි' },
-      { ko: '보험회사에만 연락한다', en: 'Call only insurance', si: 'රක්ෂණ සමාගමට පමණක් කතා කරයි' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '사고 발생 시 가장 먼저 차량을 안전한 곳으로 이동시키고, 부상자가 있는지 확인한 후 119에 신고해야 합니다.',
-      en: 'First, move the vehicle to a safe area, check for injuries, then call 119 (emergency).',
-      si: 'අනතුරකින් පසු, පළමුව වාහනය ආරක්ෂිත ස්ථානයකට ගෙන, තුවාලකරුවන් සිටී දැයි පරීක්ෂා කර, 119ට (හදිසි) ඇමතිය යුතුය.'
-    }
-  },
-  {
-    id: 15, category: '응급처치', cat_en: 'First Aid',
-    q: { ko: '심폐소생술(CPR)에서 가슴 압박의 권장 횟수는?', en: 'Recommended chest compressions in CPR?', si: 'CPR හි පපුව තද කිරීමේ නිර්දේශිත අනුපාතය?' },
-    options: [
-      { ko: '분당 60-80회', en: '60-80 per minute', si: 'මිනිත්තුවට 60-80' },
-      { ko: '분당 100-120회', en: '100-120 per minute', si: 'මිනිත්තුවට 100-120' },
-      { ko: '분당 30-50회', en: '30-50 per minute', si: 'මිනිත්තුවට 30-50' },
-      { ko: '분당 150회 이상', en: '150+ per minute', si: 'මිනිත්තුවට 150+' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '성인 심폐소생술 시 가슴 압박은 분당 100-120회의 속도로 약 5-6cm 깊이로 시행해야 합니다.',
-      en: 'For adult CPR, perform chest compressions at 100-120 per minute, about 5-6cm deep.',
-      si: 'වැඩිහිටියන්ගේ CPR සඳහා, මිනිත්තුවට 100-120 ක අනුපාතයකින්, සෙ.මී. 5-6 ක ගැඹුරකින් පපුව තද කළ යුතුය.'
-    }
-  },
-  {
-    id: 16, category: '자동차 정비', cat_en: 'Maintenance',
-    q: { ko: '엔진오일은 보통 몇 km마다 교환해야 합니까?', en: 'How often should engine oil be changed?', si: 'එන්ජින් තෙල් කොපමණ කි.මී. වරක් මාරු කළ යුතුද?' },
-    options: [
-      { ko: '500-1,000km', en: '500-1,000 km', si: 'කි.මී. 500-1,000' },
-      { ko: '5,000-10,000km', en: '5,000-10,000 km', si: 'කි.මී. 5,000-10,000' },
-      { ko: '50,000km', en: '50,000 km', si: 'කි.මී. 50,000' },
-      { ko: '교환할 필요 없다', en: 'Never', si: 'මාරු කිරීමට අවශ්‍ය නැත' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '일반적으로 엔진오일은 5,000-10,000km 또는 6개월마다 교환하는 것이 권장됩니다. 차량 매뉴얼을 참고하세요.',
-      en: 'Engine oil should typically be changed every 5,000-10,000 km or every 6 months. Check your vehicle manual.',
-      si: 'සාමාන්‍යයෙන් එන්ජින් තෙල් කි.මී. 5,000-10,000 ක් හෝ මාස 6 කට වරක් මාරු කළ යුතුය. වාහන මෙහෙයුම් අත්පොත බලන්න.'
-    }
-  },
-  {
-    id: 17, category: '자동차 정비', cat_en: 'Maintenance',
-    q: { ko: '타이어 공기압이 너무 낮으면 어떻게 됩니까?', en: 'What if tire pressure is too low?', si: 'ටයර් වාත පීඩනය ඉතා අඩු නම් කුමක් වේද?' },
-    options: [
-      { ko: '연비가 좋아진다', en: 'Better fuel economy', si: 'ඉන්ධන කාර්යක්ෂමතාව වැඩිවේ' },
-      { ko: '타이어 수명이 짧아지고 연비가 나빠진다', en: 'Shorter tire life, worse fuel economy', si: 'ටයර් ආයු කාලය අඩුවී, ඉන්ධන කාර්යක්ෂමතාව අඩුවේ' },
-      { ko: '아무 영향 없다', en: 'No effect', si: 'බලපෑමක් නැත' },
-      { ko: '주행 속도가 빨라진다', en: 'Faster driving', si: 'වේගයෙන් රිය පැදවිය හැකි වේ' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '공기압이 낮으면 타이어가 더 많이 마모되어 수명이 짧아지고, 회전 저항이 커져 연비가 나빠집니다.',
-      en: 'Low tire pressure causes faster wear, shorter tire life, and worse fuel efficiency due to higher rolling resistance.',
-      si: 'වාත පීඩනය අඩු වූ විට, ටයර වැඩිපුර ගෙවී, ආයු කාලය අඩුවී, භ්‍රමණ ප්‍රතිරෝධය වැඩිවී, ඉන්ධන කාර්යක්ෂමතාව අඩුවේ.'
-    }
-  },
-  {
-    id: 18, category: '도로교통법규', cat_en: 'Traffic Law',
-    q: { ko: '신호등이 황색일 때 운전자가 해야 할 행동은?', en: 'What to do at a yellow light?', si: 'කහ එළියකදී රියදුරු කළ යුත්තේ?' },
-    options: [
-      { ko: '빠르게 통과한다', en: 'Speed through', si: 'වේගයෙන් පසුකරයි' },
-      { ko: '안전하게 정지선 앞에 정지한다', en: 'Stop safely before the line', si: 'රේඛාවට පෙර ආරක්ෂිතව නවතියි' },
-      { ko: '속도를 유지한다', en: 'Maintain speed', si: 'වේගය පවත්වා ගනී' },
-      { ko: '차선을 변경한다', en: 'Change lanes', si: 'මංතීරුව මාරු කරයි' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '황색 신호는 정지를 의미합니다. 정지선 앞에서 안전하게 정지해야 하며, 이미 교차로에 진입한 경우에만 신속히 통과합니다.',
-      en: 'Yellow means stop. Stop safely before the line. Only proceed if already in the intersection.',
-      si: 'කහ එළියේ අරුත නැවතීමයි. රේඛාවට පෙර ආරක්ෂිතව නවතන්න. දැනටමත් හන්දියට ඇතුළු වී ඇත්නම් පමණක් ඉදිරියට යන්න.'
-    }
-  },
-  {
-    id: 19, category: '안전운전', cat_en: 'Safe Driving',
-    q: { ko: '운전 중 가장 안전한 차로 변경 방법은?', en: 'Safest way to change lanes?', si: 'මංතීරු මාරු කිරීමේ ආරක්ෂිතම ක්‍රමය?' },
-    options: [
-      { ko: '방향지시등 없이 빠르게 변경한다', en: 'Change quickly without signal', si: 'සංඥාවක් නැතිව ඉක්මනින් මාරු කරයි' },
-      { ko: '방향지시등을 켜고 사이드미러와 사각지대를 확인 후 변경한다', en: 'Signal, check mirrors and blind spots, then change', si: 'සංඥාව දැල්වා, කැඩපත් සහ අන්ධ ස්ථාන පරීක්ෂා කර, මාරු කරයි' },
-      { ko: '경적을 울리며 변경한다', en: 'Honk while changing', si: 'බෙල් නාද කරමින් මාරු කරයි' },
-      { ko: '뒷차에게 양보를 요청한다', en: 'Ask car behind to yield', si: 'පසුපස වාහනයට මග හැරීමට කියයි' },
-    ],
-    correct: 1,
-    explain: {
-      ko: '차로 변경 전 방향지시등을 켜고, 사이드미러와 사각지대를 모두 확인한 후 안전하게 변경해야 합니다.',
-      en: 'Before changing lanes, signal, check side mirrors and blind spots, then change safely.',
-      si: 'මංතීරු මාරු කිරීමට පෙර, සංඥාව දල්වා, පැති කැඩපත් සහ අන්ධ ස්ථාන පරීක්ෂා කර, ආරක්ෂිතව මාරු වන්න.'
-    }
-  },
-  {
-    id: 20, category: '도로교통법규', cat_en: 'Traffic Law',
-    q: { ko: '한국에서 운전면허 학과시험 합격점수는? (2종 보통 기준)', en: 'Passing score for driving theory test in Korea? (Class 2)', si: 'කොරියාවේ රියදුරු සිද්ධාන්ත විභාගයේ සමත් වීමේ ලකුණු? (2 වර්ගය)' },
-    options: [
-      { ko: '40점 이상', en: '40 or more', si: '40 හෝ වැඩි' },
-      { ko: '50점 이상', en: '50 or more', si: '50 හෝ වැඩි' },
-      { ko: '60점 이상', en: '60 or more', si: '60 හෝ වැඩි' },
-      { ko: '70점 이상', en: '70 or more', si: '70 හෝ වැඩි' },
-    ],
-    correct: 2,
-    explain: {
-      ko: '2종 보통 면허는 60점 이상, 1종 보통 면허는 70점 이상이 합격선입니다. 학과시험은 100점 만점, 40문제로 출제됩니다.',
-      en: 'Class 2 needs 60+, Class 1 needs 70+. The test has 40 questions, scored out of 100.',
-      si: '2 වර්ගය සඳහා 60+, 1 වර්ගය සඳහා 70+ ලකුණු අවශ්‍යය. විභාගයේ ප්‍රශ්න 40 ක් ඇති අතර 100ක් ලකුණු ඇත.'
-    }
-  },
-];
+    
+    QUESTIONS = transformed;
+    console.log('Loaded ' + QUESTIONS.length + ' questions for ' + langCode);
+    return true;
+  } catch (err) {
+    console.error('Failed to load questions:', err);
+    QUESTIONS = [];
+    return false;
+  }
+}
 
 // ===========================================
 // STATE
@@ -1591,11 +1326,35 @@ function selectLang(code) {
   renderLanguageList(document.getElementById('lang-input').value);
 }
 
-function confirmLang() {
+async function confirmLang() {
   // Update home greeting based on lang
   const greeting = GREETINGS[state.currentLang] || 'Welcome';
   document.getElementById('home-greeting').textContent = `${greeting} · Welcome`;
+  
+  // Show loading
+  showLoadingScreen();
+  
+  // Load questions for selected language
+  const success = await loadQuestions(state.currentLang);
+  
+  if (!success) {
+    showErrorScreen();
+    return;
+  }
+  
+  // Update home UI with loaded count
+  updateHomeStats();
+  
+  hideLoadingScreen();
   goToScreen('home-screen');
+}
+
+function updateHomeStats() {
+  const total = QUESTIONS.length;
+  const totalEl = document.getElementById('home-total');
+  if (totalEl) totalEl.textContent = '/' + total;
+  const practiceCount = document.getElementById('practice-count');
+  if (practiceCount) practiceCount.textContent = 'Topic practice · ' + total + ' Q';
 }
 
 // ===========================================
@@ -1625,9 +1384,20 @@ function goToSplash() {
   goToScreen('splash');
 }
 
-function skipToHome() {
+async function skipToHome() {
   state.currentLang = 'si';
   document.getElementById('home-greeting').textContent = 'ආයුබෝවන් · Welcome';
+  
+  showLoadingScreen();
+  const success = await loadQuestions('si');
+  
+  if (!success) {
+    showErrorScreen();
+    return;
+  }
+  
+  updateHomeStats();
+  hideLoadingScreen();
   goToScreen('home-screen');
 }
 
@@ -1654,6 +1424,10 @@ function alertPreview(message) {
 // PRACTICE MODE
 // ===========================================
 function startPractice() {
+  if (!QUESTIONS || QUESTIONS.length === 0) {
+    alert('문제를 불러오는 중입니다. 잠시 후 다시 시도하세요.\nLoading questions, please try again.');
+    return;
+  }
   state.questionIndex = 0;
   state.correctCount = 0;
   state.wrongCount = 0;
@@ -1661,6 +1435,56 @@ function startPractice() {
   state.answered = false;
   goToScreen('question-screen');
   renderQuestion();
+}
+
+// ===========================================
+// LOADING / ERROR SCREENS
+// ===========================================
+function showLoadingScreen() {
+  let overlay = document.getElementById('loading-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'loading-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:var(--cream);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;';
+    overlay.innerHTML = `
+      <div style="width:48px;height:48px;border:4px solid var(--line);border-top-color:var(--saffron);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+      <div style="font-family:'Bricolage Grotesque',serif;font-size:24px;font-weight:700;letter-spacing:-0.02em;">Loading questions...</div>
+      <div style="font-size:13px;color:var(--ink-soft);font-family:'IBM Plex Sans KR',sans-serif;">문제를 불러오는 중...</div>
+      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    `;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+}
+
+function hideLoadingScreen() {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function showErrorScreen() {
+  hideLoadingScreen();
+  let overlay = document.getElementById('error-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'error-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:var(--cream);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center;';
+    overlay.innerHTML = `
+      <div style="font-size:64px;">📚</div>
+      <div style="font-family:'Bricolage Grotesque',serif;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;">Coming soon</div>
+      <div style="font-size:14px;color:var(--ink-soft);max-width:320px;line-height:1.5;">
+        이 언어는 준비 중입니다.<br>
+        මෙම භාෂාව සූදානම් කරමින් පවතී.<br>
+        <span style="font-style:italic;">This language is being prepared by translators.</span>
+      </div>
+      <button onclick="document.getElementById('error-overlay').style.display='none';location.reload()" 
+        style="margin-top:24px;padding:14px 28px;background:var(--ink);color:var(--cream);border:none;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">
+        Try again · 다시 시도
+      </button>
+    `;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
 }
 
 function startMockExam() {

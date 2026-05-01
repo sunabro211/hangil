@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한길 도구 1 v2: CSV 청소기 + 해설 생성기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #F2EDE2;
+  --cream-deep: #E8E0CE;
+  --ink: #14110D;
+  --ink-soft: #4A4438;
+  --muted: #8A8170;
+  --line: #D9D0BC;
+  --primary: #14315E;
+  --saffron: #D6691E;
+  --green: #2E6B3E;
+  --red: #B5342A;
+  --paper: #FFFFFF;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+  padding: 32px 20px;
+  min-height: 100vh;
+}
+.container { max-width: 960px; margin: 0 auto; }
+.header {
+  text-align: center;
+  padding: 32px 0 48px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 48px;
+}
+.header .badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background: var(--saffron);
+  color: white;
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+.header h1 {
+  font-family: 'Bricolage Grotesque', serif;
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.header h1 .ac { color: var(--saffron); font-style: italic; }
+.header p {
+  color: var(--ink-soft);
+  font-size: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.header .version {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+.step {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 28px;
+  margin-bottom: 20px;
+}
+.step-num {
+  display: inline-block;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--saffron);
+  color: white;
+  text-align: center;
+  line-height: 32px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  margin-right: 12px;
+}
+.step h2 {
+  font-family: 'Bricolage Grotesque', serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+.step p { color: var(--ink-soft); margin-bottom: 16px; }
+.upload-area {
+  border: 2px dashed var(--line);
+  border-radius: 14px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--cream);
+}
+.upload-area:hover, .upload-area.dragover {
+  border-color: var(--saffron);
+  background: #FFF8F0;
+}
+.upload-area.has-file {
+  border-style: solid;
+  border-color: var(--green);
+  background: #F0F7F2;
+}
+.upload-area .icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+.upload-area .text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.upload-area .sub {
+  font-size: 13px;
+  color: var(--muted);
+}
+input[type="file"] { display: none; }
+.btn {
+  display: inline-block;
+  padding: 14px 28px;
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  border-radius: 12px;
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled {
+  background: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.btn.green { background: var(--green); }
+.btn.saffron { background: var(--saffron); }
+.btn.primary { background: var(--primary); }
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.stat-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.stat-card .num {
+  font-family: 'Bricolage Grotesque', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.stat-card .lbl {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.preview {
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 500px;
+  overflow-y: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+th {
+  background: var(--cream-deep);
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+}
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #F0EBDD;
+  vertical-align: top;
+}
+td.id { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--saffron); }
+td.cat span {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: var(--cream-deep);
+  font-weight: 600;
+  font-size: 10px;
+}
+td.ans {
+  font-weight: 700;
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  text-align: center;
+}
+.warning {
+  background: #FFF8E1;
+  border-left: 3px solid var(--saffron);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  margin: 16px 0;
+  line-height: 1.6;
+}
+.success {
+  background: #F0F7F2;
+  border-left: 3px solid var(--green);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  margin: 16px 0;
+  line-height: 1.6;
+}
+.info {
+  background: #E8F0F7;
+  border-left: 3px solid var(--primary);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  margin: 16px 0;
+  line-height: 1.6;
+}
+.hidden { display: none; }
+.cat-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.cat-pill {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  padding: 8px 14px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cat-pill .count {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--saffron);
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--line);
+}
+.tab {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+.tab.active {
+  color: var(--ink);
+  border-bottom-color: var(--saffron);
+}
+.script-box {
+  background: #1A1A1A;
+  color: #E8E0CE;
+  padding: 16px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.changelog {
+  background: var(--cream-deep);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 32px;
+}
+.changelog h3 {
+  font-family: 'Bricolage Grotesque', serif;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+.changelog ul {
+  list-style: none;
+  padding: 0;
+}
+.changelog li {
+  padding: 6px 0 6px 24px;
+  position: relative;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.changelog li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="badge">Tool 1 v2.0 · CSV Cleaner + Explanation Generator</div>
+    <h1>한길 <span class="ac">청소기</span> v2.</h1>
+    <p>도로교통공단 원본 1,000문항을 깨끗한 22개 언어 시트 데이터로 변환합니다. 보기5 처리 + 해설 자동 생성 + 언어별 시트 분리.</p>
+    <div class="version">v2.0 · 보기5 지원 · 해설 자동 생성 · 22개 시트 분리</div>
+  </div>
+
+  <div class="changelog">
+    <h3>v2.0 개선 사항</h3>
+    <ul>
+      <li>5지선다 문항 정확히 처리 (185개 문항 영향)</li>
+      <li>모든 문항에 기본 해설 자동 생성 (템플릿 기반)</li>
+      <li>22개 언어 시트 자동 생성용 Apps Script 출력</li>
+      <li>카테고리 분류 정확도 개선 (운전·도로 키워드 추가)</li>
+      <li>복수 정답 처리 강화</li>
+    </ul>
+  </div>
+
+  <!-- STEP 1: Upload -->
+  <div class="step">
+    <h2><span class="step-num">1</span>CSV 파일 업로드</h2>
+    <p>도로교통공단 공식 문제은행 CSV (questions-ko.csv)를 업로드하세요.</p>
+    <label for="file-input">
+      <div class="upload-area" id="upload-area">
+        <div class="icon">📂</div>
+        <div class="text">CSV 파일을 클릭하거나 끌어다 놓으세요</div>
+        <div class="sub">지원 형식: .csv (UTF-8)</div>
+      </div>
+    </label>
+    <input type="file" id="file-input" accept=".csv">
+  </div>
+
+  <!-- STEP 2: Stats -->
+  <div class="step hidden" id="stats-step">
+    <h2><span class="step-num">2</span>분석 결과</h2>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="num" id="stat-total">0</div>
+        <div class="lbl">총 문항</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-clean">0</div>
+        <div class="lbl">청소 완료</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-5opt">0</div>
+        <div class="lbl">5지선다</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-multi">0</div>
+        <div class="lbl">복수 정답</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px;">
+      <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--ink-soft); letter-spacing: 0.05em; text-transform: uppercase;">카테고리별 분포</h3>
+      <div class="cat-breakdown" id="cat-breakdown"></div>
+    </div>
+
+    <div class="warning" id="warning-box" style="display: none;">
+      <strong>⚠️ 경고:</strong> <span id="warning-msg"></span>
+    </div>
+  </div>
+
+  <!-- STEP 3: Preview -->
+  <div class="step hidden" id="preview-step">
+    <h2><span class="step-num">3</span>미리보기 (처음 10개)</h2>
+    <p>청소된 데이터를 확인하세요. 5지선다 문항도 정상 처리됩니다.</p>
+    <div class="preview">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>카테고리</th>
+            <th>문제</th>
+            <th>선택지 수</th>
+            <th>정답</th>
+            <th>해설 (자동)</th>
+          </tr>
+        </thead>
+        <tbody id="preview-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STEP 4: Download -->
+  <div class="step hidden" id="download-step">
+    <h2><span class="step-num">4</span>다운로드 + 시트 생성</h2>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="master">📊 원본 시트</button>
+      <button class="tab" data-tab="script">🤖 시트 자동 생성기</button>
+      <button class="tab" data-tab="guide">📖 사용 가이드</button>
+    </div>
+
+    <!-- TAB 1: Master Sheet -->
+    <div class="tab-content" id="tab-master">
+      <p>먼저 <strong>원본_한국어 시트</strong>를 만듭니다. 이 시트가 기본입니다.</p>
+      <p style="font-size: 13px; color: var(--muted);">칼럼: ID, 카테고리, 문제, 선택1~5, 정답번호, 해설</p>
+
+      <div class="btn-row" style="margin-top: 16px;">
+        <button class="btn green" id="copy-master">📋 클립보드에 복사 (TSV)</button>
+        <button class="btn" id="download-master-tsv">💾 TSV 다운로드</button>
+        <button class="btn" id="download-master-csv">💾 CSV 다운로드</button>
+      </div>
+
+      <div class="info" style="margin-top: 16px;">
+        <strong>📊 사용 방법:</strong><br>
+        1. <strong>"클립보드에 복사"</strong> 클릭<br>
+        2. <a href="https://sheets.google.com" target="_blank" style="color: var(--primary); font-weight: 600;">Google Sheets</a> 새 시트 열기<br>
+        3. 이름을 <strong>"원본_한국어"</strong>로 변경 (시트 하단 탭 더블클릭)<br>
+        4. A1 셀 클릭 → <strong>Ctrl+V</strong>로 붙여넣기<br>
+        5. 1,000행이 자동으로 들어감<br>
+        6. 그 다음 [TAB 2: 시트 자동 생성기]로 이동
+      </div>
+    </div>
+
+    <!-- TAB 2: Script Generator -->
+    <div class="tab-content hidden" id="tab-script">
+      <p><strong>이 Apps Script가 22개 언어 시트를 자동 생성합니다.</strong> 한 번 실행하면 신할라, 타밀, 네팔 등 22개 시트가 자동으로 만들어지고 GOOGLETRANSLATE 공식까지 자동 입력됩니다.</p>
+
+      <div class="info">
+        <strong>🤖 사용 방법:</strong><br>
+        1. Google Sheets 열기 → 메뉴 <strong>확장 프로그램 → Apps Script</strong><br>
+        2. 빈 화면이 나오면 기존 코드 모두 삭제<br>
+        3. 아래 스크립트 복사 → 붙여넣기<br>
+        4. <strong>Ctrl+S</strong> 저장<br>
+        5. 상단 <strong>"실행"</strong> 버튼 클릭 (함수: <code>setupAllLanguageSheets</code>)<br>
+        6. 권한 요청 → "허용" → 5분 기다림<br>
+        7. 완료 후 시트로 돌아가면 22개 언어 시트가 자동 생성됨
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button class="btn primary" id="copy-script">📋 Apps Script 복사하기</button>
+      </div>
+
+      <div class="script-box" id="script-display" style="margin-top: 16px;"></div>
+    </div>
+
+    <!-- TAB 3: Guide -->
+    <div class="tab-content hidden" id="tab-guide">
+      <h3 style="font-family: 'Bricolage Grotesque', serif; font-size: 20px; margin-bottom: 16px;">전체 작업 흐름</h3>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: var(--cream); padding: 16px; border-radius: 12px; border-left: 3px solid var(--saffron);">
+          <strong>1단계: 원본_한국어 시트 만들기 (5분)</strong><br>
+          <span style="font-size: 13px; color: var(--ink-soft);">[TAB 1]에서 클립보드 복사 → Google Sheets에 붙여넣기</span>
+        </div>
+        <div style="background: var(--cream); padding: 16px; border-radius: 12px; border-left: 3px solid var(--saffron);">
+          <strong>2단계: 22개 언어 시트 자동 생성 (10분)</strong><br>
+          <span style="font-size: 13px; color: var(--ink-soft);">[TAB 2] Apps Script 실행 → 22개 시트 자동 생성, GOOGLETRANSLATE 공식 자동 입력</span>
+        </div>
+        <div style="background: var(--cream); padding: 16px; border-radius: 12px; border-left: 3px solid var(--saffron);">
+          <strong>3단계: 자동 번역 완료 대기 (5-30분)</strong><br>
+          <span style="font-size: 13px; color: var(--ink-soft);">22개 언어 × 1,000문항 = 자동 번역. 시트가 처리할 때까지 기다림</span>
+        </div>
+        <div style="background: var(--cream); padding: 16px; border-radius: 12px; border-left: 3px solid var(--saffron);">
+          <strong>4단계: 번역을 값으로 고정 (각 시트마다)</strong><br>
+          <span style="font-size: 13px; color: var(--ink-soft);">번역 칼럼 전체 선택 → 복사 → 같은 자리에 "값으로 붙여넣기" (Ctrl+Shift+V) → 통역사 수정 시 다시 영어로 안 돌아감</span>
+        </div>
+        <div style="background: var(--cream); padding: 16px; border-radius: 12px; border-left: 3px solid var(--saffron);">
+          <strong>5단계: 권한 잠금 + 추적 시스템 (다음 단계)</strong><br>
+          <span style="font-size: 13px; color: var(--ink-soft);">통역사별 자기 시트만 편집 가능, 활동 자동 추적 (Apps Script 추가 예정)</span>
+        </div>
+      </div>
+
+      <div class="warning" style="margin-top: 24px;">
+        <strong>⚠️ 중요한 알림:</strong><br>
+        - GOOGLETRANSLATE는 한도가 있어요. 22개 언어 × 1,000문항 한 번에 못 하면 시트가 멈출 수 있음.<br>
+        - Apps Script가 그래서 50문항씩 끊어서 처리하도록 설계됐습니다.<br>
+        - 만약 멈추면 그 시점에 멈춘 시트만 다시 실행하면 됩니다.<br>
+        - 자동 번역 품질은 통역사 검수 시작점입니다 (50-70% 다시 쓰일 수 있음).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// CATEGORY CLASSIFICATION (improved)
+// ==========================================
+const CATEGORY_RULES = [
+  {
+    cat: '신호와 표지',
+    keywords: ['표지', '표지판', '신호등', '신호기', '경음기', '경광등', '교통안전표지', '주의표지', '규제표지', '지시표지', '보조표지', '노면표시', '깜빡이', '방향지시등', '비상등', '전조등', '안개등', '미등', '점멸', '황색등', '적색등', '녹색등', '청색등', '신호의 뜻', '신호의 의미', '교통신호', '지시', '점선', '실선']
+  },
+  {
+    cat: '응급처치',
+    keywords: ['응급', '응급처치', '심폐소생', 'CPR', '구급', '부상자', '구조', '119', '응급실', '의식', '맥박', '호흡', '출혈', '골절', '구토', '기도확보', '심장', '쇼크', '의식불명']
+  },
+  {
+    cat: '자동차 정비',
+    keywords: ['엔진오일', '타이어', '냉각수', '브레이크액', '점화플러그', '배터리', '연료필터', '연비', '엔진', '미션', '클러치', '필터', 'ABS', '에어백', '계기판', '경고등', 'EPS', '와이퍼', '서스펜션', '점검', '정비', '오일', '벨트', '체인', '윤활']
+  },
+  {
+    cat: '안전운전',
+    keywords: ['졸음운전', '음주운전', '피로운전', '집중', '주의력', '시야', '예측운전', '방어운전', '안전벨트', '좌석안전띠', '동승자', '영유아', '어린이보호', '노인보호', '장애인', '보행자', '횡단보도', '비 오는', '눈 오는', '안개', '빙판', '커브', '내리막길', '오르막길', '야간운전', '주간', '제한속도', '안전거리', '제동거리', '추돌', '음주측정']
+  },
+  {
+    cat: '도로교통법규',
+    keywords: ['도로교통법', '면허증', '범칙금', '과태료', '벌점', '벌칙', '처벌', '단속', '운전면허', '면허취소', '면허정지', '갱신', '적성검사', '교차로', '횡단', '정차', '주차', '추월', '앞지르기', '유턴', '차로변경', '차선', '고속도로', '자동차전용도로', '일반도로', '이면도로', '진입', '진출', '톨게이트', '하이패스', '교통사고', '도주', '뺑소니', '신고', '책임보험']
+  },
+];
+const DEFAULT_CATEGORY = '도로교통법규';
+
+// ==========================================
+// EXPLANATION TEMPLATES
+// ==========================================
+function generateExplanation(item) {
+  const ans = item.ansAll;
+  const correctOpt = item.opts[item.ans - 1] || '';
+  const cat = item.cat;
+
+  // Generate based on category and answer
+  const intro = ans.length > 1
+    ? `정답은 ${ans.join(', ')}번입니다.`
+    : `정답은 ${ans[0]}번 "${correctOpt}"입니다.`;
+
+  const catContext = {
+    '신호와 표지': '도로교통법 시행규칙에 따른 교통안전표지 규정에 의거합니다.',
+    '응급처치': '교통사고 발생 시 응급처치 매뉴얼에 따른 정확한 절차입니다.',
+    '자동차 정비': '자동차 안전 운행을 위한 기본 점검 사항입니다.',
+    '안전운전': '안전운전을 위한 도로교통법 및 운전자 의무 사항입니다.',
+    '도로교통법규': '도로교통법 및 관련 시행규칙에 따른 규정입니다.',
+  };
+
+  return `${intro} ${catContext[cat] || catContext['도로교통법규']} (※ 본 해설은 자동 생성된 초안이며, 검수가 필요합니다.)`;
+}
+
+// ==========================================
+// PARSE CSV
+// ==========================================
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = [];
+  let cur = [], cell = '', inQuotes = false, i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cell += '"'; i += 2; continue; }
+        inQuotes = false; i++; continue;
+      }
+      cell += c; i++;
+    } else {
+      if (c === '"') { inQuotes = true; i++; continue; }
+      if (c === ',') { cur.push(cell); cell = ''; i++; continue; }
+      if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        cur.push(cell); rows.push(cur); cur = []; cell = ''; i++; continue;
+      }
+      cell += c; i++;
+    }
+  }
+  if (cell || cur.length) { cur.push(cell); rows.push(cur); }
+  return rows;
+}
+
+// ==========================================
+// CLEAN
+// ==========================================
+function cleanQuestion(text) {
+  if (!text) return '';
+  text = text.replace(/^\d+\.\s*/, '');
+  text = text.replace(/\(홈페이지\s*참조\)/g, '').trim();
+  text = text.replace(/\s+/g, ' ').trim();
+  return text;
+}
+
+function cleanOption(text) {
+  if (!text) return '';
+  text = text.replace(/^\s*[①②③④⑤]\s*/, '');
+  text = text.replace(/^\s*\d+\)\s*/, '');
+  text = text.replace(/\s+/g, ' ').trim();
+  return text;
+}
+
+function parseAnswer(text) {
+  if (!text) return { primary: 0, all: [], multi: false };
+  const match = text.match(/[\d]+(?:\s*,\s*\d+)*/);
+  if (!match) return { primary: 0, all: [], multi: false };
+  const nums = match[0].split(/\s*,\s*/).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+  return {
+    primary: nums[0] || 0,
+    all: nums,
+    multi: nums.length > 1
+  };
+}
+
+function classifyCategory(qText, options) {
+  const fullText = qText + ' ' + options.join(' ');
+  let bestScore = 0;
+  let bestCat = DEFAULT_CATEGORY;
+  for (const rule of CATEGORY_RULES) {
+    let score = 0;
+    for (const kw of rule.keywords) {
+      const matches = (fullText.match(new RegExp(kw, 'g')) || []).length;
+      score += matches;
+    }
+    if (score > bestScore) { bestScore = score; bestCat = rule.cat; }
+  }
+  return bestCat;
+}
+
+// ==========================================
+// MAIN PROCESS
+// ==========================================
+let cleanedData = null;
+
+function processCSV(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) { alert('파일에 데이터가 부족합니다.'); return; }
+
+  const dataRows = rows.slice(1);
+  const cleaned = [];
+  let warnings = 0, multiCount = 0, fiveOptCount = 0;
+  const catCounts = {};
+
+  dataRows.forEach((row, idx) => {
+    if (!row || row.length < 6) return;
+    const [qRaw, o1Raw, o2Raw, o3Raw, o4Raw, o5Raw, ansRaw] = row;
+    if (!qRaw || qRaw.trim() === '') return;
+
+    const q = cleanQuestion(qRaw);
+    const opts = [
+      cleanOption(o1Raw),
+      cleanOption(o2Raw),
+      cleanOption(o3Raw),
+      cleanOption(o4Raw),
+    ];
+    // Add option 5 if exists
+    const opt5 = cleanOption(o5Raw);
+    if (opt5) {
+      opts.push(opt5);
+      fiveOptCount++;
+    } else {
+      opts.push(''); // empty 5th option
+    }
+
+    const ans = parseAnswer(ansRaw);
+    const cat = classifyCategory(q, opts);
+
+    if (!q || opts.filter(o => o).length < 2 || ans.primary === 0) {
+      warnings++; return;
+    }
+
+    if (ans.multi) multiCount++;
+    catCounts[cat] = (catCounts[cat] || 0) + 1;
+
+    const id = 'Q' + String(idx + 1).padStart(4, '0');
+    const item = {
+      id, cat, q, opts,
+      ans: ans.primary,
+      ansAll: ans.all,
+      multi: ans.multi
+    };
+    item.explanation = generateExplanation(item);
+    cleaned.push(item);
+  });
+
+  cleanedData = { items: cleaned, warnings, multiCount, fiveOptCount, catCounts };
+  renderResults();
+}
+
+function renderResults() {
+  const { items, warnings, multiCount, fiveOptCount, catCounts } = cleanedData;
+  document.getElementById('stats-step').classList.remove('hidden');
+  document.getElementById('preview-step').classList.remove('hidden');
+  document.getElementById('download-step').classList.remove('hidden');
+
+  document.getElementById('stat-total').textContent = items.length;
+  document.getElementById('stat-clean').textContent = items.length;
+  document.getElementById('stat-5opt').textContent = fiveOptCount;
+  document.getElementById('stat-multi').textContent = multiCount;
+
+  if (warnings > 0) {
+    document.getElementById('warning-box').style.display = 'block';
+    document.getElementById('warning-msg').textContent = `${warnings}개 문항이 형식 오류로 제외되었습니다.`;
+  }
+
+  const breakdown = document.getElementById('cat-breakdown');
+  breakdown.innerHTML = Object.entries(catCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, count]) => `<div class="cat-pill"><span>${cat}</span><span class="count">${count}</span></div>`)
+    .join('');
+
+  const previewBody = document.getElementById('preview-body');
+  previewBody.innerHTML = items.slice(0, 10).map(item => `
+    <tr>
+      <td class="id">${item.id}</td>
+      <td class="cat"><span>${item.cat}</span></td>
+      <td>${escapeHtml(item.q.substring(0, 60))}${item.q.length > 60 ? '...' : ''}</td>
+      <td style="text-align: center; font-weight: 600;">${item.opts.filter(o=>o).length}지</td>
+      <td class="ans">${item.ansAll.join(',')}</td>
+      <td style="font-size: 11px; color: var(--muted);">${escapeHtml(item.explanation.substring(0, 50))}...</td>
+    </tr>
+  `).join('');
+
+  // Generate the master TSV/CSV
+  generateMasterOutputs();
+  // Generate the Apps Script
+  generateAppsScript();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ==========================================
+// MASTER SHEET OUTPUT (Korean original)
+// ==========================================
+function generateMasterTSV() {
+  const headers = [
+    'ID', '카테고리', '문제', '선택1', '선택2', '선택3', '선택4', '선택5',
+    '정답번호', '정답복수', '해설'
+  ];
+  const lines = [headers.join('\t')];
+
+  cleanedData.items.forEach(item => {
+    const row = [
+      item.id,
+      item.cat,
+      item.q,
+      item.opts[0] || '',
+      item.opts[1] || '',
+      item.opts[2] || '',
+      item.opts[3] || '',
+      item.opts[4] || '',
+      item.ans,
+      item.multi ? item.ansAll.join(',') : '',
+      item.explanation
+    ];
+    const escaped = row.map(c => {
+      let s = String(c || '');
+      s = s.replace(/\t/g, ' ').replace(/\n/g, ' ').replace(/\r/g, '');
+      return s;
+    });
+    lines.push(escaped.join('\t'));
+  });
+
+  return lines.join('\n');
+}
+
+function generateMasterCSV() {
+  const headers = [
+    'ID', '카테고리', '문제', '선택1', '선택2', '선택3', '선택4', '선택5',
+    '정답번호', '정답복수', '해설'
+  ];
+  const lines = [headers.join(',')];
+
+  cleanedData.items.forEach(item => {
+    const row = [
+      item.id, item.cat, item.q,
+      item.opts[0] || '', item.opts[1] || '', item.opts[2] || '',
+      item.opts[3] || '', item.opts[4] || '',
+      item.ans, item.multi ? item.ansAll.join(',') : '', item.explanation
+    ];
+    const escaped = row.map(c => {
+      let s = String(c || '');
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+        s = '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    });
+    lines.push(escaped.join(','));
+  });
+
+  return lines.join('\n');
+}
+
+let masterTSV = '', masterCSV = '';
+function generateMasterOutputs() {
+  masterTSV = generateMasterTSV();
+  masterCSV = generateMasterCSV();
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob(['\uFEFF' + content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('copy-master').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(masterTSV);
+    alert(`✓ ${cleanedData.items.length}개 행이 클립보드에 복사되었습니다!\n\nGoogle Sheets 새 시트의 A1 셀에 Ctrl+V 하세요.`);
+  } catch (e) {
+    alert('복사 실패. TSV 다운로드 사용해주세요.');
+  }
+});
+document.getElementById('download-master-tsv').addEventListener('click', () => {
+  downloadFile('hangil-원본_한국어.tsv', masterTSV, 'text/tab-separated-values');
+});
+document.getElementById('download-master-csv').addEventListener('click', () => {
+  downloadFile('hangil-원본_한국어.csv', masterCSV, 'text/csv');
+});
+
+// ==========================================
+// APPS SCRIPT GENERATOR
+// ==========================================
+const LANGUAGES = [
+  { code: 'en', name: '영어', native: 'English' },
+  { code: 'zh-CN', name: '중국어', native: '中文' },
+  { code: 'vi', name: '베트남어', native: 'Tiếng Việt' },
+  { code: 'ja', name: '일본어', native: '日本語' },
+  { code: 'th', name: '태국어', native: 'ภาษาไทย' },
+  { code: 'id', name: '인도네시아어', native: 'Bahasa Indonesia' },
+  { code: 'mn', name: '몽골어', native: 'Монгол' },
+  { code: 'ru', name: '러시아어', native: 'Русский' },
+  { code: 'km', name: '캄보디아어', native: 'ខ្មែរ' },
+  { code: 'tl', name: '필리핀어', native: 'Tagalog' },
+  { code: 'si', name: '신할라어', native: 'සිංහල' },
+  { code: 'ta', name: '타밀어', native: 'தமிழ்' },
+  { code: 'ne', name: '네팔어', native: 'नेपाली' },
+  { code: 'bn', name: '벵골어', native: 'বাংলা' },
+  { code: 'my', name: '미얀마어', native: 'မြန်မာ' },
+  { code: 'uz', name: '우즈벡어', native: "O'zbek" },
+  { code: 'ur', name: '우르두어', native: 'اردو' },
+  { code: 'hi', name: '힌디어', native: 'हिन्दी' },
+  { code: 'ar', name: '아랍어', native: 'العربية' },
+  { code: 'tr', name: '터키어', native: 'Türkçe' },
+  { code: 'es', name: '스페인어', native: 'Español' },
+];
+
+let appsScriptCode = '';
+function generateAppsScript() {
+  const langData = LANGUAGES.map(l => `  { code: '${l.code}', name: '${l.name}', native: '${l.native}' }`).join(',\n');
+
+  appsScriptCode = `// ============================================================
+// 한길 (HanGil) - 22개 언어 시트 자동 생성기
+// 한 번 실행하면 22개 언어 시트가 자동 생성되고
+// GOOGLETRANSLATE 공식이 자동 입력됩니다.
+// ============================================================
+
+const LANGUAGES = [
+${langData}
+];
+
+const SOURCE_SHEET_NAME = '원본_한국어';
+const NUM_QUESTIONS = ${cleanedData.items.length}; // 총 문항 수
+
+function setupAllLanguageSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sourceSheet = ss.getSheetByName(SOURCE_SHEET_NAME);
+
+  if (!sourceSheet) {
+    SpreadsheetApp.getUi().alert(
+      '오류: "' + SOURCE_SHEET_NAME + '" 시트를 찾을 수 없습니다.\\n' +
+      '먼저 청소기 v2의 [TAB 1]에서 데이터를 시트에 붙여넣고 시트 이름을 "' +
+      SOURCE_SHEET_NAME + '"로 바꿔주세요.'
+    );
+    return;
+  }
+
+  const totalRows = NUM_QUESTIONS + 1; // +1 for header
+  let createdCount = 0;
+  let skippedCount = 0;
+
+  // Show progress to user
+  SpreadsheetApp.getActiveSpreadsheet().toast('22개 언어 시트 생성 시작...', '진행 중', 3);
+
+  for (let i = 0; i < LANGUAGES.length; i++) {
+    const lang = LANGUAGES[i];
+    const sheetName = lang.name + ' (' + lang.native + ')';
+
+    // Check if sheet already exists
+    let langSheet = ss.getSheetByName(sheetName);
+    if (langSheet) {
+      skippedCount++;
+      continue;
+    }
+
+    // Create new sheet
+    langSheet = ss.insertSheet(sheetName);
+
+    // Header row
+    const headers = [
+      'ID', '한국어_원문', '한국어_선택1', '한국어_선택2', '한국어_선택3', '한국어_선택4', '한국어_선택5', '정답번호',
+      lang.name + '_문제_AI', lang.name + '_선택1_AI', lang.name + '_선택2_AI',
+      lang.name + '_선택3_AI', lang.name + '_선택4_AI', lang.name + '_선택5_AI',
+      lang.name + '_해설_AI',
+      lang.name + '_문제_검수', lang.name + '_선택1_검수', lang.name + '_선택2_검수',
+      lang.name + '_선택3_검수', lang.name + '_선택4_검수', lang.name + '_선택5_검수',
+      lang.name + '_해설_검수',
+      '상태', '검수자', '검수일'
+    ];
+    langSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    // Format header
+    const headerRange = langSheet.getRange(1, 1, 1, headers.length);
+    headerRange.setBackground('#14110D').setFontColor('#F2EDE2').setFontWeight('bold').setFontSize(10);
+    langSheet.setFrozenRows(1);
+
+    // Build formulas for rows 2 to totalRows
+    const formulas = [];
+    for (let row = 2; row <= totalRows; row++) {
+      const sourceRef = SOURCE_SHEET_NAME + '!';
+      const r = [
+        '=IFERROR(' + sourceRef + 'A' + row + ',"")',           // ID
+        '=IFERROR(' + sourceRef + 'C' + row + ',"")',           // 한국어 문제
+        '=IFERROR(' + sourceRef + 'D' + row + ',"")',           // 선택1
+        '=IFERROR(' + sourceRef + 'E' + row + ',"")',           // 선택2
+        '=IFERROR(' + sourceRef + 'F' + row + ',"")',           // 선택3
+        '=IFERROR(' + sourceRef + 'G' + row + ',"")',           // 선택4
+        '=IFERROR(' + sourceRef + 'H' + row + ',"")',           // 선택5
+        '=IFERROR(' + sourceRef + 'I' + row + ',"")',           // 정답번호
+        // AI translations
+        '=IFERROR(IF(B' + row + '="","",GOOGLETRANSLATE(B' + row + ',"ko","' + lang.code + '")),"")',
+        '=IFERROR(IF(C' + row + '="","",GOOGLETRANSLATE(C' + row + ',"ko","' + lang.code + '")),"")',
+        '=IFERROR(IF(D' + row + '="","",GOOGLETRANSLATE(D' + row + ',"ko","' + lang.code + '")),"")',
+        '=IFERROR(IF(E' + row + '="","",GOOGLETRANSLATE(E' + row + ',"ko","' + lang.code + '")),"")',
+        '=IFERROR(IF(F' + row + '="","",GOOGLETRANSLATE(F' + row + ',"ko","' + lang.code + '")),"")',
+        '=IFERROR(IF(G' + row + '="","",GOOGLETRANSLATE(G' + row + ',"ko","' + lang.code + '")),"")',
+        '=IFERROR(IF(' + sourceRef + 'K' + row + '="","",GOOGLETRANSLATE(' + sourceRef + 'K' + row + ',"ko","' + lang.code + '")),"")',
+        // 검수 columns (empty, for translator)
+        '', '', '', '', '', '', '',
+        // 상태, 검수자, 검수일
+        '대기', '', ''
+      ];
+      formulas.push(r);
+    }
+
+    // Write formulas in chunks to avoid timeout
+    const chunkSize = 100;
+    for (let start = 0; start < formulas.length; start += chunkSize) {
+      const chunk = formulas.slice(start, start + chunkSize);
+      langSheet.getRange(start + 2, 1, chunk.length, chunk[0].length).setValues(chunk);
+      Utilities.sleep(500); // brief pause between chunks
+    }
+
+    // Format AI columns (light yellow background)
+    const aiRange = langSheet.getRange(2, 9, totalRows - 1, 7);
+    aiRange.setBackground('#FFF8E1');
+
+    // Format 검수 columns (white, editable visual cue)
+    const editRange = langSheet.getRange(2, 16, totalRows - 1, 7);
+    editRange.setBackground('#FFFFFF').setBorder(true, true, true, true, true, true, '#D6691E', SpreadsheetApp.BorderStyle.SOLID);
+
+    // Status column - dropdown
+    const statusRange = langSheet.getRange(2, 23, totalRows - 1, 1);
+    const rule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['대기', '검토중', '승인', '문제있음'])
+      .build();
+    statusRange.setDataValidation(rule);
+
+    // Auto-resize columns
+    langSheet.autoResizeColumns(1, headers.length);
+
+    createdCount++;
+
+    // Progress toast
+    if ((i + 1) % 5 === 0) {
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+        (i + 1) + '/22 시트 생성 중... (' + lang.name + ' 완료)',
+        '진행 중', 3
+      );
+    }
+  }
+
+  // Final summary
+  const message = '✓ 완료!\\n\\n' +
+    '생성: ' + createdCount + '개 시트\\n' +
+    '건너뜀: ' + skippedCount + '개 (이미 존재)\\n\\n' +
+    '⚠️ 다음 단계:\\n' +
+    '1. 각 시트에서 GOOGLETRANSLATE 공식이 계산될 때까지 5-30분 기다리세요.\\n' +
+    '2. 번역 완료되면 AI 칼럼 (I~O열)을 복사 → Ctrl+Shift+V로 "값으로 붙여넣기"\\n' +
+    '   → 텍스트로 고정해야 통역사가 수정해도 안 사라집니다.';
+
+  SpreadsheetApp.getUi().alert(message);
+}
+
+// ============================================================
+// 각 언어 시트의 AI 번역을 값으로 고정 (한 번만 실행)
+// ============================================================
+function freezeAITranslations() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let frozenCount = 0;
+
+  for (const lang of LANGUAGES) {
+    const sheetName = lang.name + ' (' + lang.native + ')';
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) continue;
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) continue;
+
+    // AI columns: I to O (9 to 15)
+    const range = sheet.getRange(2, 9, lastRow - 1, 7);
+    const values = range.getValues();
+    range.setValues(values); // overwrite formulas with their results
+    frozenCount++;
+  }
+
+  SpreadsheetApp.getUi().alert(
+    '✓ ' + frozenCount + '개 시트의 AI 번역을 텍스트로 고정했습니다.\\n' +
+    '이제 통역사가 수정해도 원래 값으로 돌아가지 않습니다.'
+  );
+}
+
+// ============================================================
+// 진행률 대시보드 시트 생성
+// ============================================================
+function createDashboard() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashName = '📊 대시보드';
+
+  let dash = ss.getSheetByName(dashName);
+  if (dash) ss.deleteSheet(dash);
+
+  dash = ss.insertSheet(dashName, 0);
+  dash.getRange(1, 1).setValue('한길 - 22개 언어 진행률').setFontSize(20).setFontWeight('bold');
+  dash.getRange(2, 1).setValue('마지막 업데이트: ' + new Date().toLocaleString('ko-KR'));
+
+  const headers = ['언어', '검수 완료', '검토중', '대기', '진행률', '상태'];
+  dash.getRange(4, 1, 1, headers.length).setValues([headers]);
+  dash.getRange(4, 1, 1, headers.length).setBackground('#14110D').setFontColor('#F2EDE2').setFontWeight('bold');
+
+  const formulas = LANGUAGES.map((lang, i) => {
+    const sheetName = "'" + lang.name + ' (' + lang.native + ")'";
+    return [
+      lang.name + ' (' + lang.native + ')',
+      '=IFERROR(COUNTIF(' + sheetName + '!W:W,"승인"),0)',
+      '=IFERROR(COUNTIF(' + sheetName + '!W:W,"검토중"),0)',
+      '=IFERROR(COUNTIF(' + sheetName + '!W:W,"대기"),0)',
+      '=IFERROR(B' + (i + 5) + '/' + NUM_QUESTIONS + ',0)',
+      '=IF(B' + (i + 5) + '=' + NUM_QUESTIONS + ',"✅ 완료",IF(B' + (i + 5) + '>0,"🟡 진행중","⚪ 시작 전"))'
+    ];
+  });
+
+  dash.getRange(5, 1, formulas.length, 6).setValues(formulas);
+  dash.getRange(5, 5, formulas.length, 1).setNumberFormat('0.0%');
+  dash.autoResizeColumns(1, headers.length);
+  dash.setFrozenRows(4);
+
+  SpreadsheetApp.getUi().alert('✓ 대시보드 시트가 생성되었습니다.');
+}
+`;
+
+  document.getElementById('script-display').textContent = appsScriptCode;
+}
+
+document.getElementById('copy-script').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(appsScriptCode);
+    alert('✓ Apps Script가 클립보드에 복사되었습니다!\n\n다음 단계:\n1. Google Sheets → 확장 프로그램 → Apps Script\n2. Ctrl+V로 붙여넣기\n3. Ctrl+S 저장\n4. 실행 → setupAllLanguageSheets');
+  } catch (e) {
+    alert('복사 실패. 코드 박스에서 직접 복사해주세요.');
+  }
+});
+
+// ==========================================
+// TABS
+// ==========================================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// ==========================================
+// FILE INPUT
+// ==========================================
+const fileInput = document.getElementById('file-input');
+const uploadArea = document.getElementById('upload-area');
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault(); uploadArea.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.csv')) { alert('CSV 파일만 지원됩니다.'); return; }
+  uploadArea.classList.add('has-file');
+  uploadArea.querySelector('.icon').textContent = '✓';
+  uploadArea.querySelector('.text').textContent = file.name;
+  uploadArea.querySelector('.sub').textContent = `${(file.size / 1024).toFixed(1)} KB · 처리 중...`;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      processCSV(e.target.result);
+      uploadArea.querySelector('.sub').textContent = `${(file.size / 1024).toFixed(1)} KB · 처리 완료 ✓`;
+    } catch (err) {
+      alert('처리 오류: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+</script>
+
+</body>
+</html>

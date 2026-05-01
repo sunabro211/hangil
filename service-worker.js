@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hangil-v1';
+const CACHE_NAME = 'hangil-v2';  // ⚠️ 업데이트 시 v3, v4 등으로 올려야 함
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const ASSETS = [
   './icon-512.png'
 ];
 
-// Install: cache files
+// Install: cache base files
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
@@ -15,7 +15,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: delete old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -27,8 +27,28 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: serve from cache, fallback to network
+// Fetch strategy:
+// - questions.json: network-first (always try fresh, fallback to cache)
+// - everything else: cache-first
 self.addEventListener('fetch', (event) => {
+  const url = event.request.url;
+  
+  // Network-first for questions.json (so updates are picked up fast)
+  if (url.includes('questions.json')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache the fresh copy
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+  
+  // Cache-first for everything else
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
