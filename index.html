@@ -1470,18 +1470,19 @@ function showErrorScreen() {
     overlay.id = 'error-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:var(--cream);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center;';
     overlay.innerHTML = `
-      <div style="font-size:64px;">📚</div>
-      <div style="font-family:'Bricolage Grotesque',serif;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;">Coming soon</div>
-      <div style="font-size:14px;color:var(--ink-soft);max-width:320px;line-height:1.5;">
-        이 언어는 준비 중입니다.<br>
-        මෙම භාෂාව සූදානම් කරමින් පවතී.<br>
-        <span style="font-style:italic;">This language is being prepared by translators.</span>
-      </div>
-      <button onclick="document.getElementById('error-overlay').style.display='none';location.reload()" 
-        style="margin-top:24px;padding:14px 28px;background:var(--ink);color:var(--cream);border:none;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">
-        Try again · 다시 시도
-      </button>
-    `;
+  <div style="font-size:64px;">📚</div>
+  <div style="font-family:'Bricolage Grotesque',serif;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;">Coming soon</div>
+  <div id="error-msg-native" style="font-size:15px;color:var(--ink);max-width:340px;line-height:1.5;font-weight:500;">
+    This language is being prepared.
+  </div>
+  <div style="font-size:13px;color:var(--ink-soft);max-width:340px;line-height:1.5;font-style:italic;">
+    이 언어는 통역사들이 준비하고 있습니다.
+  </div>
+  <button onclick="document.getElementById('error-overlay').style.display='none';location.reload()" 
+    style="margin-top:24px;padding:14px 28px;background:var(--ink);color:var(--cream);border:none;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">
+    <span id="error-btn-native">Try again</span> · 다시 시도
+  </button>
+`;
     document.body.appendChild(overlay);
   }
   overlay.style.display = 'flex';
